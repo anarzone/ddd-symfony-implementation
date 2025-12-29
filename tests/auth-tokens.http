@@ -1,0 +1,231 @@
+###
+# FastReserve API Authentication Tests
+#
+# This file contains HTTP requests to test API token generation and authentication
+#
+# Prerequisites:
+# 1. Run: php bin/console doctrine:fixtures:load
+#    This creates an admin user: admin@fastreserve.test / admin123
+#
+# 2. Start Symfony server: php bin/console server:run
+#
+# 3. Update @baseUrl at the top if needed
+###
+@contentType = application/json
+
+###############################################################################
+# AUTHENTICATION & API TOKEN GENERATION
+###############################################################################
+
+### 1. Login and Generate API Token (Default - 30 days expiry)
+# @name loginDefault
+POST {{baseUrl}}/auth/login?XDEBUG_SESSION_START=1
+Content-Type: {{contentType}}
+
+{
+    "email": "admin@fastreserve.com",
+    "password": "admin123"
+}
+
+### 2. Login with Custom Description
+# @name loginWithDescription
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "admin@fastreserve.com",
+    "password": "admin123",
+    "description": "Development token for testing"
+}
+
+### 3. Login with Custom Expiry (7 days)
+# @name loginShortExpiry
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "admin@fastreserve.com",
+    "password": "admin123",
+    "description": "Short-term token",
+    "expiresInDays": 7
+}
+
+### 4. Login with Long Expiry (90 days)
+# @name loginLongExpiry
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "admin@fastreserve.com",
+    "password": "admin123",
+    "description": "Long-term production token",
+    "expiresInDays": 90
+}
+
+### 5. Login - Invalid Email
+# @name loginInvalidEmail
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "nonexistent@example.com",
+    "password": "admin123"
+}
+
+### 6. Login - Invalid Password
+# @name loginInvalidPassword
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "admin@fastreserve.com",
+    "password": "wrongpassword"
+}
+
+### 7. Login - Missing Email
+# @name loginMissingEmail
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "password": "admin123"
+}
+
+### 8. Login - Missing Password
+# @name loginMissingPassword
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "admin@fastreserve.com"
+}
+
+###############################################################################
+# API TOKEN MANAGEMENT (Requires Authentication)
+###############################################################################
+
+# NOTE: For the following requests, copy the token from the login response above
+# and replace {{yourApiToken}} with it
+
+### 9. List All API Tokens
+# @name listTokens
+GET {{baseUrl}}/api/tokens
+Authorization: {{authToken}}
+
+### 10. Generate Additional API Token
+# @name generateAdditionalToken
+POST {{baseUrl}}/api/tokens
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "description": "Additional token for mobile app",
+    "expiresInDays": 60
+}
+
+### 11. Generate Token with 1 Year Expiry
+# @name generateLongLivedToken
+POST {{baseUrl}}/api/tokens
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "description": "Service account token",
+    "expiresInDays": 365
+}
+
+### 12. Revoke Token
+# @name revokeToken
+# Replace {{tokenId}} with actual token ID from the list response
+@tokenId = 1
+DELETE {{baseUrl}}/api/tokens/{{tokenId}}
+Authorization: {{authToken}}
+
+###############################################################################
+# TEST API TOKEN AUTHENTICATION
+###############################################################################
+
+# After getting a token from login, test it with authenticated endpoints
+
+### 13. Test Token - List Warehouses (Admin Only)
+# @name testTokenListWarehouses
+GET {{baseUrl}}/api/admin/warehouses
+Authorization: Bearer {{tokenFromLogin}}
+
+### 14. Test Token - Reserve Stock
+# @name testTokenReserveStock
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenFromLogin}}
+
+{
+    "stockId": 1,
+    "quantity": 10,
+    "minutesValid": 15
+}
+
+### 15. Test Token - Get Stock Level (Public Endpoint)
+# @name testTokenGetStockLevel
+GET {{baseUrl}}/api/stock/1/level
+
+###############################################################################
+# ERROR CASES
+###############################################################################
+
+### 16. Test Invalid Token
+# @name testInvalidToken
+GET {{baseUrl}}/api/admin/warehouses
+Authorization: Bearer invalid_token_abc123
+
+### 17. Test Missing Token
+# @name testMissingToken
+GET {{baseUrl}}/api/admin/warehouses
+
+### 18. Test Expired Token Scenario
+# (Create a token with 0 days expiry to test)
+# @name testExpiredTokenCreation
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "admin@fastreserve.com",
+    "password": "admin123",
+    "description": "Immediately expiring token",
+    "expiresInDays": -1
+}
+
+###############################################################################
+# QUICK WORKFLOW EXAMPLE
+###############################################################################
+
+# Step 1: Login and get token
+### Login Workflow
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "admin@fastreserve.com",
+    "password": "admin123",
+    "description": "Workflow test token"
+}
+
+###
+
+# Step 2: Use the token in subsequent requests
+# Copy the token value from above and paste it below
+
+### Create Warehouse with Token
+POST {{baseUrl}}/api/admin/warehouses
+Content-Type: {{contentType}}
+Authorization: Bearer paste_token_here
+
+{
+    "name": "Test Warehouse",
+    "capacity": 5000,
+    "address": "123 Test St",
+    "city": "Test City",
+    "postalCode": "12345",
+    "type": "STANDARD"
+}
+
+###

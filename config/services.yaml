@@ -18,6 +18,20 @@ services:
     # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
+        exclude:
+            - '../src/Inventory/Domain/Model'
+            - '../src/Account/Domain/Model'
+            - '../src/**/DependencyInjection/'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    # Repository bindings - explicit mapping for dependency inversion
+    App\Inventory\Domain\Repository\StockRepositoryInterface:
+        '@App\Inventory\Infrastructure\Persistence\Doctrine\StockRepository'
+
+    App\Inventory\Domain\Repository\WarehouseRepositoryInterface:
+        '@App\Inventory\Infrastructure\Persistence\Doctrine\WarehouseRepository'
+
+    App\Account\Domain\Repository\UserRepositoryInterface:
+        '@App\Account\Infrastructure\Persistence\Doctrine\UserRepository'
+
+    App\Account\Domain\Repository\ApiTokenRepositoryInterface:
+        '@App\Account\Infrastructure\Persistence\Doctrine\ApiTokenRepository'

@@ -1,0 +1,19 @@
+framework:
+    messenger:
+        transports:
+            sync: 'sync://'
+            async: 'doctrine://default?queue_name=default'
+
+        routing:
+            # Commands should be async
+            'App\Inventory\Application\Command\*': async
+            # Queries should be sync
+            'App\Inventory\Application\Query\*': sync
+        default_bus: command.bus
+        buses:
+            command.bus:
+                middleware:
+                    - doctrine_transaction
+            query.bus:
+                middleware:
+                    - doctrine_ping_connection

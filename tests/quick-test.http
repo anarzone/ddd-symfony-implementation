@@ -1,0 +1,198 @@
+###
+# Quick Start HTTP Tests for FastReserve API
+# Simplified tests without authentication for quick testing
+#
+# SETUP:
+# 1. Start server: symfony server:start OR php bin/console server:run
+# 2. Comment out security in controllers temporarily for testing
+# 3. Click "Send Request" above each endpoint
+###
+
+@contentType = application/json
+
+###############################################################################
+# WAREHOUSE MANAGEMENT (Admin Endpoints)
+###############################################################################
+
+### Create a Warehouse
+POST {{baseUrl}}/api/admin/warehouses
+Content-Type: {{contentType}}
+
+{
+    "name": "Main Warehouse",
+    "capacity": 10000,
+    "address": "123 Main Street",
+    "city": "San Francisco",
+    "postalCode": "94102",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
+    "type": "STANDARD"
+}
+
+### List All Warehouses
+GET {{baseUrl}}/api/admin/warehouses
+
+### Get Warehouse Details (replace 1 with actual ID)
+GET {{baseUrl}}/api/admin/warehouses/1
+
+### Activate Warehouse (replace 1 with actual ID)
+PATCH {{baseUrl}}/api/admin/warehouses/1/activate
+
+### Deactivate Warehouse (replace 1 with actual ID)
+PATCH {{baseUrl}}/api/admin/warehouses/1/deactivate
+
+###############################################################################
+# STOCK RESERVATION (User Endpoints)
+###############################################################################
+
+### Reserve Stock
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+
+{
+    "stockId": 1,
+    "quantity": 10,
+    "minutesValid": 15
+}
+
+###############################################################################
+# STOCK QUERIES (Public Endpoints)
+###############################################################################
+
+### Get Stock Level
+GET {{baseUrl}}/api/stock/1/level
+
+###############################################################################
+# TEST SCENARIOS
+###############################################################################
+
+### Scenario 1: Create Multiple Warehouse Types
+
+### Standard Warehouse
+POST {{baseUrl}}/api/admin/warehouses
+Content-Type: {{contentType}}
+
+{
+    "name": "Standard Facility",
+    "capacity": 5000,
+    "address": "100 Standard Way",
+    "city": "Austin",
+    "postalCode": "78701",
+    "type": "STANDARD"
+}
+
+### Cold Storage
+POST {{baseUrl}}/api/admin/warehouses
+Content-Type: {{contentType}}
+
+{
+    "name": "Cold Storage Unit",
+    "capacity": 3000,
+    "address": "200 Freeze Lane",
+    "city": "Denver",
+    "postalCode": "80201",
+    "type": "COLD_STORAGE"
+}
+
+### Automated Warehouse
+POST {{baseUrl}}/api/admin/warehouses
+Content-Type: {{contentType}}
+
+{
+    "name": "Robot Warehouse",
+    "capacity": 15000,
+    "address": "300 Tech Boulevard",
+    "city": "Seattle",
+    "postalCode": "98101",
+    "type": "AUTOMATED"
+}
+
+### Scenario 2: Reserve with Different Durations
+
+### 15 minutes (default)
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+
+{
+    "stockId": 1,
+    "quantity": 5,
+    "minutesValid": 15
+}
+
+### 30 minutes
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+
+{
+    "stockId": 1,
+    "quantity": 8,
+    "minutesValid": 30
+}
+
+### 60 minutes (maximum)
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+
+{
+    "stockId": 1,
+    "quantity": 12,
+    "minutesValid": 60
+}
+
+###############################################################################
+# ERROR CASES
+###############################################################################
+
+### Invalid: Negative quantity
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+
+{
+    "stockId": 1,
+    "quantity": -10,
+    "minutesValid": 15
+}
+
+### Invalid: Duration too long
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+
+{
+    "stockId": 1,
+    "quantity": 10,
+    "minutesValid": 120
+}
+
+### Invalid: Missing required fields
+POST {{baseUrl}}/api/admin/warehouses
+Content-Type: {{contentType}}
+
+{
+    "name": "",
+    "capacity": 0,
+    "address": "",
+    "city": "",
+    "postalCode": ""
+}
+
+### Not Found: Non-existent warehouse
+GET {{baseUrl}}/api/admin/warehouses/99999
+
+### Not Found: Non-existent stock
+GET {{baseUrl}}/api/stock/99999/level
+
+###############################################################################
+# NOTES
+###############################################################################
+#
+# To disable authentication temporarily for testing:
+#
+# In ReservationController.php, comment out:
+#   if (!$user) { return 401; }
+#
+# In WarehouseController.php, comment out:
+#   #[IsGranted('ROLE_ADMIN')]
+#
+# Remember to re-enable security after testing!
+#
+###############################################################################

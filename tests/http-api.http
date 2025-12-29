@@ -1,0 +1,430 @@
+###
+# FastReserve API HTTP Tests
+#
+# Prerequisites:
+# 1. Run: php bin/console doctrine:database:create
+# 2. Run: php bin/console doctrine:schema:create
+# 3. Run: php bin/console doctrine:fixtures:load (if you have fixtures)
+#
+# Setup: Create environment variables file
+# cp .env .env.local
+#
+# NOTE: Replace {{base_url}} with your actual URL (default: http://localhost:8000)
+###
+
+@contentType = application/json
+
+###############################################################################
+# ADMIN ENDPOINTS - Warehouse Management
+###############################################################################
+
+### 1. Create Warehouse (STANDARD)
+# @name createWarehouseStandard
+POST {{baseUrl}}/api/admin/warehouses
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "name": "Main Distribution Center",
+    "capacity": 10000,
+    "address": "123 Industrial Blvd",
+    "city": "San Francisco",
+    "postalCode": "94102",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
+    "type": "STANDARD"
+}
+
+### 2. Create Warehouse (COLD_STORAGE)
+# @name createWarehouseColdStorage
+POST {{baseUrl}}/api/admin/warehouses
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "name": "Cold Storage Facility",
+    "capacity": 5000,
+    "address": "456 Freezer Way",
+    "city": "Seattle",
+    "postalCode": "98101",
+    "latitude": 47.6062,
+    "longitude": -122.3321,
+    "type": "COLD_STORAGE"
+}
+
+### 3. Create Warehouse (AUTOMATED)
+# @name createWarehouseAutomated
+POST {{baseUrl}}/api/admin/warehouses
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "name": "Automated Robot Warehouse",
+    "capacity": 20000,
+    "address": "789 Tech Park",
+    "city": "Austin",
+    "postalCode": "78701",
+    "latitude": 30.2672,
+    "longitude": -97.7431,
+    "type": "AUTOMATED"
+}
+
+### 4. Create Warehouse - Validation Error (missing required fields)
+# @name createWarehouseValidationError
+POST {{baseUrl}}/api/admin/warehouses
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "name": "",
+    "capacity": -100,
+    "address": "",
+    "city": "",
+    "postalCode": ""
+}
+
+### 5. List All Warehouses
+# @name listWarehouses
+GET {{baseUrl}}/api/admin/warehouses
+Authorization: {{authToken}}
+
+### 6. Get Specific Warehouse Info
+# @name getWarehouseInfo
+@warehouseId = 1
+GET {{baseUrl}}/api/admin/warehouses/{{warehouseId}}
+Authorization: {{authToken}}
+
+### 7. Activate Warehouse
+# @name activateWarehouse
+# @warehouseId = 1
+PATCH {{baseUrl}}/api/admin/warehouses/{{warehouseId}}/activate
+Authorization: {{authToken}}
+
+### 8. Deactivate Warehouse
+# @name deactivateWarehouse
+# @warehouseId = 1
+PATCH {{baseUrl}}/api/admin/warehouses/{{warehouseId}}/deactivate
+Authorization: {{authToken}}
+
+###############################################################################
+# USER ENDPOINTS - Stock Reservation
+###############################################################################
+
+### 9. Reserve Stock (Success)
+# @name reserveStock
+POST {{baseUrl}}/api/reserve?XDEBUG_SESSION_START=1
+Content-Type: {{contentType}}
+#Authorization: {{authToken}}
+
+{
+    "stockId": 1,
+    "quantity": 10,
+    "minutesValid": 15
+}
+
+### 10. Reserve Stock - Custom Duration (30 minutes)
+# @name reserveStockExtended
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "stockId": 1001,
+    "quantity": 25,
+    "minutesValid": 30
+}
+
+### 11. Reserve Stock - Validation Error (zero quantity)
+# @name reserveStockZeroQuantity
+POST {{baseUrl}}/api/reserve?XDEBUG_SESSION_START=1
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "stockId": 1,
+    "quantity": 0,
+    "minutesValid": 15
+}
+
+### 12. Reserve Stock - Validation Error (negative quantity)
+# @name reserveStockNegativeQuantity
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "stockId": 1,
+    "quantity": -5,
+    "minutesValid": 15
+}
+
+### 13. Reserve Stock - Validation Error (invalid duration)
+# @name reserveStockInvalidDuration
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "stockId": 1,
+    "quantity": 10,
+    "minutesValid": 120
+}
+
+###############################################################################
+# PUBLIC ENDPOINTS - Stock Queries
+###############################################################################
+
+### 14. Get Stock Level
+# @name getStockLevel
+# @stockId = 1
+GET {{baseUrl}}/api/stock/{{stockId}}/level
+
+### 15. Get Stock Level - Not Found
+# @name getStockLevelNotFound
+GET {{baseUrl}}/api/stock/99999/level
+
+###############################################################################
+# AUTHENTICATION TESTS
+###############################################################################
+
+### 16. Reserve Stock - Unauthorized (No Token)
+# @name reserveStockUnauthorized
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+
+{
+    "stockId": 1,
+    "quantity": 10,
+    "minutesValid": 15
+}
+
+### 17. Admin Endpoint - Forbidden (No Admin Role)
+# @name adminEndpointForbidden
+POST {{baseUrl}}/api/admin/warehouses
+Content-Type: {{contentType}}
+Authorization: Bearer user_token_without_admin_role
+
+{
+    "name": "Should Fail",
+    "capacity": 100,
+    "address": "Test",
+    "city": "Test",
+    "postalCode": "123"
+}
+
+###############################################################################
+# BULK OPERATIONS & STRESS TESTS
+###############################################################################
+
+### 18. Create Multiple Warehouses (Bulk Test)
+# @name bulkCreateWarehouses
+POST {{baseUrl}}/api/admin/warehouses
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "name": "Regional Hub North",
+    "capacity": 15000,
+    "address": "100 North Street",
+    "city": "Chicago",
+    "postalCode": "60601",
+    "type": "STANDARD"
+}
+
+### 19. Multiple Reservations (Concurrency Test)
+# @name concurrentReservation1
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "stockId": 1,
+    "quantity": 5,
+    "minutesValid": 15
+}
+
+### 20. Multiple Reservations (Concurrency Test)
+# @name concurrentReservation2
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "stockId": 1,
+    "quantity": 8,
+    "minutesValid": 15
+}
+
+### 21. Check Stock After Reservations
+# @name checkStockAfterReservations
+GET {{baseUrl}}/api/stock/1/level
+
+###############################################################################
+# EDGE CASES & ERROR HANDLING
+###############################################################################
+
+### 22. Warehouse - Not Found
+# @name warehouseNotFound
+GET {{baseUrl}}/api/admin/warehouses/99999
+
+### 23. Activate Non-Existent Warehouse
+# @name activateWarehouseNotFound
+PATCH {{baseUrl}}/api/admin/warehouses/99999/activate
+
+### 24. Deactivate Non-Existent Warehouse
+# @name deactivateWarehouseNotFound
+PATCH {{baseUrl}}/api/admin/warehouses/99999/deactivate
+
+### 25. Reserve Stock - Insufficient Stock
+# @name reserveStockInsufficientStock
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "stockId": 1,
+    "quantity": 999999,
+    "minutesValid": 15
+}
+
+### 26. Reserve Stock - Non-Existent Stock
+# @name reserveStockNotFound
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "stockId": 99999,
+    "quantity": 10,
+    "minutesValid": 15
+}
+
+### 27. Warehouse - Invalid Type
+# @name createWarehouseInvalidType
+POST {{baseUrl}}/api/admin/warehouses
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "name": "Test Warehouse",
+    "capacity": 1000,
+    "address": "123 Test St",
+    "city": "Test City",
+    "postalCode": "12345",
+    "type": "INVALID_TYPE"
+}
+
+### 28. Warehouse - Invalid Coordinates (Latitude out of range)
+# @name createWarehouseInvalidLatitude
+POST {{baseUrl}}/api/admin/warehouses
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "name": "Test Warehouse",
+    "capacity": 1000,
+    "address": "123 Test St",
+    "city": "Test City",
+    "postalCode": "12345",
+    "latitude": 95.0,
+    "longitude": -122.4194
+}
+
+### 29. Warehouse - Invalid Coordinates (Longitude out of range)
+# @name createWarehouseInvalidLongitude
+POST {{baseUrl}}/api/admin/warehouses
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "name": "Test Warehouse",
+    "capacity": 1000,
+    "address": "123 Test St",
+    "city": "Test City",
+    "postalCode": "12345",
+    "latitude": 37.7749,
+    "longitude": -185.0
+}
+
+###############################################################################
+# WORKFLOW TESTS - Complete User Journeys
+###############################################################################
+
+### 30. Complete Workflow: Create → Reserve → Check
+# Step 1: Create warehouse
+POST {{baseUrl}}/api/admin/warehouses
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "name": "Workflow Test Warehouse",
+    "capacity": 5000,
+    "address": "500 Workflow Way",
+    "city": "Portland",
+    "postalCode": "97201",
+    "type": "STANDARD"
+}
+
+###
+
+# Step 2: Reserve stock (assuming stockId 2 exists)
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+    "stockId": 2,
+    "quantity": 50,
+    "minutesValid": 20
+}
+
+###
+
+# Step 3: Check stock level
+GET {{baseUrl}}/api/stock/2/level
+
+###
+
+###############################################################################
+# PERFORMANCE & MONITORING
+###############################################################################
+
+### 31. List All Warehouses (Performance Check)
+# @name performanceListWarehouses
+GET {{baseUrl}}/api/admin/warehouses
+Authorization: {{authToken}}
+
+### 32. Get Stock Level (Performance Check)
+# @name performanceGetStockLevel
+GET {{baseUrl}}/api/stock/1/level
+
+###############################################################################
+# NOTES & INSTRUCTIONS
+###############################################################################
+#
+# HOW TO USE THESE TESTS:
+#
+# 1. Install REST Client extension in VS Code or PhpStorm
+# 2. Start Symfony server: php bin/console server:run
+# 3. Update @baseUrl at the top if needed
+# 4. For authenticated endpoints, you need to:
+#    - Create a user in the database
+#    - Generate a JWT token (use lexik/jwt-authentication-bundle)
+#    - Replace {{authToken}} with your actual token
+#
+# QUICK SETUP WITHOUT AUTH:
+# temporarily comment out security checks in controllers:
+# - #[IsGranted('ROLE_ADMIN')] in WarehouseController
+# - $this->security->getUser() checks in ReservationController
+#
+# DATABASE SETUP:
+# php bin/console doctrine:database:create
+# php bin/console doctrine:schema:create
+# php bin/console doctrine:fixtures:load
+#
+# RUNNING TESTS:
+# - Click "Send Request" above each request
+# - Results appear in a separate panel
+# - Named requests (@name) can be referenced in other tests
+#
+###############################################################################

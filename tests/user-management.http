@@ -1,0 +1,308 @@
+###
+# FastReserve API Authentication & User Management Tests
+#
+# This file contains HTTP requests to test user creation, authentication, and API token generation
+#
+# Prerequisites:
+# 1. Run: php bin/console doctrine:fixtures:load
+#    This creates an admin user: admin@fastreserve.com / admin123
+#
+# 2. Start Symfony server: php bin/console server:run
+#
+# 3. Update @baseUrl at the top if needed
+###
+
+@baseUrl = http://localhost:8000
+@contentType = application/json
+
+###############################################################################
+# STEP 1: ADMIN LOGIN
+###############################################################################
+
+### 1. Login as Admin (Get Initial Token)
+# @name adminLogin
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "admin@fastreserve.com",
+    "password": "admin123",
+    "description": "Initial admin token"
+}
+
+###############################################################################
+# STEP 2: USER MANAGEMENT (Admin Only)
+###############################################################################
+
+# NOTE: Replace {{adminToken}} with the token from step 1
+@adminToken = Bearer {{adminToken}}
+
+### 2. Create New User (Standard Role)
+# @name createUserStandard
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+Authorization: {{adminToken}}
+
+{
+    "email": "warehouse.manager@fastreserve.com",
+    "password": "manager123",
+    "roles": ["ROLE_USER"]
+}
+
+### 3. Create New User (Admin Role)
+# @name createUserAdmin
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+Authorization: {{adminToken}}
+
+{
+    "email": "regional.admin@fastreserve.com",
+    "password": "admin456",
+    "roles": ["ROLE_ADMIN"]
+}
+
+### 4. Create Multiple Users at Once
+# @name createWarehouseStaff
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+Authorization: {{adminToken}}
+
+{
+    "email": "staff.member1@fastreserve.com",
+    "password": "staff123",
+    "roles": ["ROLE_USER"]
+}
+
+### 5. List All Users
+# @name listUsers
+GET {{baseUrl}}/api/users
+Authorization: {{adminToken}}
+
+### 6. Create User - Validation Error (Missing Email)
+# @name createUserMissingEmail
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+Authorization: {{adminToken}}
+
+{
+    "password": "test123"
+}
+
+### 7. Create User - Validation Error (Missing Password)
+# @name createUserMissingPassword
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+Authorization: {{adminToken}}
+
+{
+    "email": "test@example.com"
+}
+
+### 8. Create User - Duplicate Email
+# @name createUserDuplicate
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+Authorization: {{adminToken}}
+
+{
+    "email": "admin@fastreserve.com",
+    "password": "test123"
+}
+
+###############################################################################
+# STEP 3: LOGIN WITH NEWLY CREATED USERS
+###############################################################################
+
+### 9. Login as Regular User
+# @name loginUserStandard
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "warehouse.manager@fastreserve.com",
+    "password": "manager123",
+    "description": "Warehouse manager token"
+}
+
+### 10. Login with Custom Token Description
+# @name loginWithDescription
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "warehouse.manager@fastreserve.com",
+    "password": "manager123",
+    "description": "Mobile app access token",
+    "expiresInDays": 60
+}
+
+###############################################################################
+# STEP 4: API TOKEN MANAGEMENT
+###############################################################################
+
+# Replace {{userToken}} with token from step 3 or 9
+@userToken = Bearer {{userToken}}
+
+### 11. List My API Tokens
+# @name listMyTokens
+GET {{baseUrl}}/api/tokens
+Authorization: {{userToken}}
+
+### 12. Generate Additional Token
+# @name generateAdditionalToken
+POST {{baseUrl}}/api/tokens
+Content-Type: {{contentType}}
+Authorization: {{userToken}}
+
+{
+    "description": "Backup token",
+    "expiresInDays": 30
+}
+
+### 13. Generate Long-term Token (1 year)
+# @name generateLongTermToken
+POST {{baseUrl}}/api/tokens
+Content-Type: {{contentType}}
+Authorization: {{adminToken}}
+
+{
+    "description": "Service account token",
+    "expiresInDays": 365
+}
+
+### 14. Revoke Token
+# @name revokeToken
+# Replace {{tokenId}} with actual ID from list tokens response
+@tokenId = 1
+DELETE {{baseUrl}}/api/tokens/{{tokenId}}
+Authorization: {{userToken}}
+
+###############################################################################
+# STEP 5: TEST AUTHORIZATION & ACCESS CONTROL
+###############################################################################
+
+### 15. Admin Endpoint - Success (Admin User)
+# @name adminEndpointSuccess
+GET {{baseUrl}}/api/admin/warehouses
+Authorization: {{adminToken}}
+
+### 16. Admin Endpoint - Forbidden (Regular User)
+# @name adminEndpointForbidden
+GET {{baseUrl}}/api/admin/warehouses
+Authorization: {{userToken}}
+
+### 17. User Endpoint - Success (Regular User)
+# @name userEndpointSuccess
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: {{userToken}}
+
+{
+    "stockId": 1,
+    "quantity": 10,
+    "minutesValid": 15
+}
+
+### 18. Public Endpoint - No Auth Required
+# @name publicEndpoint
+GET {{baseUrl}}/api/stock/1/level
+
+###############################################################################
+# STEP 6: ERROR CASES & VALIDATION
+###############################################################################
+
+### 19. Login - Invalid Credentials
+# @name loginInvalidCredentials
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "admin@fastreserve.com",
+    "password": "wrongpassword"
+}
+
+### 20. Login - Non-existent User
+# @name loginNonExistentUser
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "nonexistent@example.com",
+    "password": "test123"
+}
+
+### 21. Protected Endpoint - No Token
+# @name protectedEndpointNoToken
+GET {{baseUrl}}/api/admin/warehouses
+
+### 22. Protected Endpoint - Invalid Token
+# @name protectedEndpointInvalidToken
+GET {{baseUrl}}/api/admin/warehouses
+Authorization: Bearer invalid_token_abc123
+
+### 23. User Creation - Unauthorized (Regular User)
+# @name createUserUnauthorized
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+Authorization: {{userToken}}
+
+{
+    "email": "should.fail@example.com",
+    "password": "test123"
+}
+
+###############################################################################
+# COMPLETE WORKFLOW EXAMPLE
+###############################################################################
+
+### Workflow Step 1: Admin Login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "admin@fastreserve.com",
+    "password": "admin123",
+    "description": "Workflow admin token"
+}
+
+###
+
+### Workflow Step 2: Create New User
+# (Copy admin token from step 1)
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+Authorization: Bearer paste_admin_token_here
+
+{
+    "email": "new.employee@fastreserve.com",
+    "password": "employee123",
+    "roles": ["ROLE_USER"]
+}
+
+###
+
+### Workflow Step 3: Login as New User
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "new.employee@fastreserve.com",
+    "password": "employee123",
+    "description": "Employee first token"
+}
+
+###
+
+### Workflow Step 4: Use Token to Reserve Stock
+# (Copy user token from step 3)
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer paste_user_token_here
+
+{
+    "stockId": 1,
+    "quantity": 25,
+    "minutesValid": 20
+}
+
+###
