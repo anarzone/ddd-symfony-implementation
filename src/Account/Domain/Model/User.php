@@ -6,27 +6,24 @@ use App\Inventory\Domain\Model\Stock\Reservation;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
+use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Uid\Uuid;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Index(name: 'idx_user_email', columns: ['email'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
-    #[ORM\Id, ORM\GeneratedValue, ORM\Column]
-    public ?int $id = null {
-        get {
-            return $this->id;
-        }
-    }
+    #[ORM\Id]
+    #[ORM\Column(type: UuidType::NAME, unique: true)]
+    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
+    #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
+    private ?Uuid $id = null;
 
     #[ORM\Column(type: Types::STRING, length: 180, unique: true)]
-    public string $email {
-        get {
-            return $this->email;
-        }
-    }
+    private string $email;
 
     #[ORM\Column(type: Types::JSON)]
     private array $roles;
@@ -36,24 +33,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     /** @var Collection<int, ApiToken> */
     #[ORM\OneToMany(targetEntity: ApiToken::class, mappedBy: 'user', cascade: ['persist', 'remove'])]
-    public Collection $apiTokens {
-        get => $this->apiTokens;
-    }
+    private Collection $apiTokens;
 
     /** @var Collection<int, Reservation> */
     #[ORM\OneToMany(targetEntity: Reservation::class, mappedBy: 'user', cascade: ['persist', 'remove'])]
-    public Collection $reservations {
-        get => $this->reservations;
-    }
+    private Collection $reservations;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    public \DateTimeImmutable $createdAt {
-        get => $this->createdAt;
-    }
+    private \DateTimeImmutable $createdAt;
 
-    public function __construct(string $email, array $roles = ['ROLE_USER'])
+    public function __construct(string $email, string $password, array $roles = ['ROLE_USER'])
     {
         $this->email = $email;
+        $this->hashPassword($password);
         $this->roles = $roles;
         $this->reservations = new ArrayCollection();
         $this->apiTokens = new ArrayCollection();
@@ -67,6 +59,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
     }
 
+    public function getId(): ?Uuid
+    {
+        return $this->id;
+    }
+
     public function getRoles(): array
     {
         $roles = $this->roles;
@@ -74,14 +71,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return array_unique($roles);
     }
 
-    public function getPassword(): string
-    {
-        return $this->password;
-    }
 
-    public function setPassword(string $password): static
+    public function hashPassword(string $password): static
     {
-        $this->password = $password;
+        $this->password = hash('sha256', $password);
 
         return $this;
     }
@@ -91,8 +84,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->email;
     }
 
-    public function eraseCredentials(): void
+    public function activeReservations(): ArrayCollection
     {
-        // If you store any temporary sensitive data, clear it here
+        return $this->reservations->filter(
+            fn(Reservation $r) => $r->isActive()
+        );
     }
 }

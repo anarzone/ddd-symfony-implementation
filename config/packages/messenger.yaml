@@ -1,9 +1,11 @@
 framework:
     messenger:
+        failure_transport: 'failed'
+
         transports:
             sync: 'sync://'
-            async: 'doctrine://default?queue_name=default'
-
+            async: '%env(MESSENGER_TRANSPORT_DSN)%'
+            failed: 'doctrine://default?queue_name=failed'
         routing:
             # Commands should be async
             'App\Inventory\Application\Command\*': async

@@ -7,6 +7,7 @@ use App\Inventory\Domain\Repository\StockRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\DBAL\LockMode;
+use Symfony\Component\Uid\UuidV7;
 
 class StockRepository extends ServiceEntityRepository implements StockRepositoryInterface
 {
@@ -15,7 +16,7 @@ class StockRepository extends ServiceEntityRepository implements StockRepository
         parent::__construct($registry, Stock::class);
     }
 
-    public function findWithLock(int $id): ?Stock
+    public function findWithLock(UuidV7 $id): ?Stock
     {
         $entity = $this->find($id, LockMode::PESSIMISTIC_WRITE);
 

@@ -12,21 +12,13 @@ class CreateUserHandler
 {
     public function __construct(
         private UserRepositoryInterface $userRepository,
-        private UserPasswordHasherInterface $passwordHasher
     ) {
     }
 
     public function __invoke(CreateUserMessage $message): array
     {
-        // Check if user already exists
-        $existingUser = $this->userRepository->findByEmail($message->email);
-        if ($existingUser) {
-            throw new \InvalidArgumentException('User with this email already exists');
-        }
-
         // Create new user
-        $user = new User($message->email, $message->roles);
-        $user->password = $this->passwordHasher->hashPassword($user, $message->password);
+        $user = new User($message->email, $message->password, $message->roles);
 
         $this->userRepository->save($user);
 

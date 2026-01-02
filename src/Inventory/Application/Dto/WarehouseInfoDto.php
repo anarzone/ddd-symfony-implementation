@@ -5,7 +5,7 @@ namespace App\Inventory\Application\Dto;
 readonly class WarehouseInfoDto
 {
     public function __construct(
-        public int $id,
+        public string $id,
         public string $name,
         public int $capacity,
         public int $currentStock,

@@ -3,6 +3,7 @@
 namespace App\Inventory\Application\Command;
 
 use App\Account\Domain\Repository\UserRepositoryInterface;
+use App\Inventory\Application\Dto\ReservationResponseDto;
 use App\Inventory\Domain\Exception\InsufficientStockException;
 use App\Inventory\Domain\Repository\StockRepositoryInterface;
 use App\Inventory\Domain\Service\StockDomainService;
@@ -20,7 +21,7 @@ readonly class ReserveStockHandler
     /**
      * @throws InsufficientStockException
      */
-    public function __invoke(ReserveStockMessage $message)
+    public function __invoke(ReserveStockMessage $message): void
     {
         $stock = $this->stockRepository->findWithLock($message->stockId);
 
@@ -35,13 +36,8 @@ readonly class ReserveStockHandler
         }
 
         try {
-            $reservation = $this->domainService->reserveStock($stock, $user, $message->quantity, $message->minutesValid);
+            $this->domainService->reserveStock($stock, $user, $message->quantity, $message->minutesValid);
             $this->stockRepository->save($stock);
-
-            return [
-                'reservationId' => $reservation->id,
-                'expiresAt' => $reservation->expiresAt->format('Y-m-d H:i:s')
-            ];
         }catch (InsufficientStockException $e){
             throw new InsufficientStockException($e->getMessage());
         }

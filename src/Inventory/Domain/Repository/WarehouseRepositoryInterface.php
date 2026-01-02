@@ -6,7 +6,7 @@ use App\Inventory\Domain\Model\Warehouse\Warehouse;
 
 interface WarehouseRepositoryInterface
 {
-    public function findWithLock(int $id);
+    public function findWithLock(string $id);
 
     public function save(Warehouse $warehouse);
 }

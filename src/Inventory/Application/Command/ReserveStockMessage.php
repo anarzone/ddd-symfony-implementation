@@ -2,16 +2,14 @@
 
 namespace App\Inventory\Application\Command;
 
-use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Uid\UuidV7;
 
 final readonly class ReserveStockMessage
 {
     public function __construct(
-        public int $stockId,
+        public UuidV7 $stockId,
         public int $quantity,
-        public int $userId,
-
-        #[Assert\Range(notInRangeMessage: 'Reservation must be between 1 and 60 minutes', min: 1, max: 60)]
-        public int $minutesValid = 15
+        public UuidV7 $userId,
+        public int $minutesValid = 15,
     ) {}
 }

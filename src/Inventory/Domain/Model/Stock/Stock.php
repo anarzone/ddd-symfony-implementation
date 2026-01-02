@@ -2,6 +2,7 @@
 
 namespace App\Inventory\Domain\Model\Stock;
 
+use App\Account\Domain\Model\User;
 use App\Inventory\Domain\Exception\InsufficientStockException;
 use App\Inventory\Domain\Model\Warehouse\Warehouse;
 use App\Inventory\Infrastructure\Persistence\Doctrine\StockRepository;
@@ -9,22 +10,25 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Types\UuidType;
+use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: StockRepository::class)]
 #[ORM\Table(name: 'inventory_stocks')]
 #[ORM\Index(name: 'idx_stock_sku', columns: ['sku_code'])]
 class Stock
 {
-    #[ORM\Id, ORM\GeneratedValue, ORM\Column]
-    private ?int $id = null {
-        get =>  $this->id;
-    }
+    #[ORM\Id]
+    #[ORM\Column(type: UuidType::NAME, unique: true)]
+    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
+    #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
+    public ?Uuid $id = null;
 
     #[ORM\Embedded(class: SKU::class)]
     public SKU $sku;
 
     #[ORM\Column(type: Types::INTEGER)]
-    private int $totalQuantity {
+    public int $totalQuantity {
         get => $this->totalQuantity;
 
         set(int $quantity) {
@@ -43,9 +47,7 @@ class Stock
 
     /** @var Collection<int, Reservation> */
     #[ORM\OneToMany(targetEntity: Reservation::class, mappedBy: 'stock', cascade: ['persist', 'remove'])]
-    public Collection $reservations {
-        get => $this->reservations;
-    }
+    public Collection $reservations;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     public \DateTimeImmutable $createdAt;
@@ -76,7 +78,7 @@ class Stock
     /**
      * @throws InsufficientStockException
      */
-    public function reserve(int $quantity, Reservation $reservation): void
+    public function reserve(int $quantity, User $user, int $minutesValid = 15): Reservation
     {
         if ($quantity <= 0) {
             throw new \InvalidArgumentException('Reservation quantity must be positive');
@@ -92,8 +94,10 @@ class Stock
             );
         }
 
-        $reservation = new Reservation($this, $quantity, $reservation->user, $reservation->expiresAt);
+        $reservation = new Reservation($this, $quantity, $user, $minutesValid);
         $this->reservations->add($reservation);
+
+        return $reservation;
     }
 
     /**

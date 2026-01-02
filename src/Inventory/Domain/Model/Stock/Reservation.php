@@ -4,14 +4,19 @@ namespace App\Inventory\Domain\Model\Stock;
 
 use App\Account\Domain\Model\User;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Types\UuidType;
+use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'inventory_reservations')]
 #[ORM\Index(name: 'idx_reservation_expiry', columns: ['expires_at'])]
 class Reservation
 {
-    #[ORM\Id, ORM\GeneratedValue, ORM\Column]
-    public ?int $id = null;
+    #[ORM\Id]
+    #[ORM\Column(type: UuidType::NAME, unique: true)]
+    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
+    #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
+    public ?Uuid $id = null;
 
     // Link to the Aggregate Root (Stock)
     #[ORM\ManyToOne(targetEntity: Stock::class, inversedBy: 'reservations')]

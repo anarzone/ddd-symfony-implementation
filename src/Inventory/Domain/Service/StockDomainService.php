@@ -19,10 +19,7 @@ class StockDomainService
         int $minutesValid = 15
     ): Reservation
     {
-        // Check if user has too many active reservations (business rule)
-        $activeReservations = $user->reservations->filter(
-            fn(Reservation $r) => $r->isActive()
-        );
+        $activeReservations = $user->activeReservations();
 
         if ($activeReservations->count() >= 10) {
             throw new InsufficientStockException(
@@ -30,21 +27,6 @@ class StockDomainService
             );
         }
 
-        if ($stock->getAvailableQuantity() < $quantity) {
-            throw new InsufficientStockException(
-                sprintf(
-                    'Insufficient stock: %d available, %d requested',
-                    $stock->getAvailableQuantity(),
-                    $quantity
-                )
-            );
-        }
-
-        $reservation = new Reservation($stock, $quantity, $user, $minutesValid);
-
-        // Add to stock
-        $stock->reservations->add($reservation);
-
-        return $reservation;
+        return $stock->reserve($quantity, $user, $minutesValid);
     }
 }

@@ -76,7 +76,7 @@ class ApiTokenController extends AbstractController
 
     #[Route('/{id}', methods: ['DELETE'])]
     #[IsGranted('ROLE_USER')]
-    public function revoke(int $id): JsonResponse
+    public function revoke(string $id): JsonResponse
     {
         $user = $this->getUser();
         if (!$user) {

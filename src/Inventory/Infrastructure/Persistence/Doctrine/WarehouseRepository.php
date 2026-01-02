@@ -15,7 +15,7 @@ class WarehouseRepository extends ServiceEntityRepository implements WarehouseRe
         parent::__construct($registry, Warehouse::class);
     }
 
-    public function findWithLock(int $id): ?Warehouse
+    public function findWithLock(string $id): ?Warehouse
     {
         $entity = $this->find($id, LockMode::PESSIMISTIC_WRITE);
 

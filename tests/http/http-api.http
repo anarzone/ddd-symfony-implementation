@@ -124,12 +124,12 @@ Content-Type: {{contentType}}
 
 ### 10. Reserve Stock - Custom Duration (30 minutes)
 # @name reserveStockExtended
-POST {{baseUrl}}/api/reserve
+POST {{baseUrl}}/api/reserve?XDEBUG_SESSION_START=1
 Content-Type: {{contentType}}
 Authorization: {{authToken}}
 
 {
-    "stockId": 1001,
+    "stockId": "019b708d-75b2-73ed-b31a-8613284480be",
     "quantity": 25,
     "minutesValid": 30
 }

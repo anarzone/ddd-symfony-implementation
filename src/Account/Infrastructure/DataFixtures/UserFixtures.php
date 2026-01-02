@@ -17,8 +17,7 @@ class UserFixtures extends Fixture implements FixtureGroupInterface
 
     public function load(ObjectManager $manager): void
     {
-        $admin = new User('admin@fastreserve.com', ['ROLE_ADMIN']);
-        $admin->password = $this->passwordHasher->hashPassword($admin, 'admin123');
+        $admin = new User('admin@fastreserve.com', 'admin123', ['ROLE_ADMIN']);
         $admin->promoteToAdmin();
 
         $manager->persist($admin);

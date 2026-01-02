@@ -6,13 +6,18 @@ use App\Inventory\Domain\Model\Stock\Stock;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Types\UuidType;
+use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'inventory_warehouses')]
 class Warehouse
 {
-    #[ORM\Id, ORM\GeneratedValue, ORM\Column]
-    public ?int $id = null;
+    #[ORM\Id]
+    #[ORM\Column(type: UuidType::NAME, unique: true)]
+    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
+    #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
+    public ?Uuid $id = null;
 
     #[ORM\Column(length: 100)]
     public string $name {

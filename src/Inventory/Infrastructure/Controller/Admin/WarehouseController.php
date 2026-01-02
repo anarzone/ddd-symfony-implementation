@@ -55,7 +55,7 @@ class WarehouseController extends AbstractController
     }
 
     #[Route('/{id}', methods: ['GET'])]
-    public function getInfo(int $id): JsonResponse
+    public function getInfo(string $id): JsonResponse
     {
         $warehouse = $this->warehouseRepository->find($id);
 
@@ -103,7 +103,7 @@ class WarehouseController extends AbstractController
     }
 
     #[Route('/{id}/activate', methods: ['PATCH'])]
-    public function activate(int $id): JsonResponse
+    public function activate(string $id): JsonResponse
     {
         $warehouse = $this->warehouseRepository->findWithLock($id);
 
@@ -122,7 +122,7 @@ class WarehouseController extends AbstractController
     }
 
     #[Route('/{id}/deactivate', methods: ['PATCH'])]
-    public function deactivate(int $id): JsonResponse
+    public function deactivate(string $id): JsonResponse
     {
         $warehouse = $this->warehouseRepository->findWithLock($id);
 
