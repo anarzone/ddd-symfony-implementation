@@ -39,7 +39,7 @@ jobs:
                 image: mysql:8.0
                 env:
                     MYSQL_ROOT_PASSWORD: root
-                    MYSQL_DATABASE: fastreserve_test
+                    MYSQL_DATABASE: fast_reserve_test
                 ports:
                     - 3306:3306
                 options: >-
@@ -63,11 +63,11 @@ jobs:
 
             -   name: Create Database Schema
                 env:
-                    DATABASE_URL: mysql://root:root@127.0.0.1:3306/fastreserve_test
+                    DATABASE_URL: mysql://root:root@127.0.0.1:3306/fast_reserve
                 run: |
                     php bin/console doctrine:schema:create --env=test
 
             -   name: Run  Tests
                 env:
-                    DATABASE_URL: mysql://root:root@127.0.0.1:3306/fastreserve_test
+                    DATABASE_URL: mysql://root:root@127.0.0.1:3306/fast_reserve
                 run: vendor/bin/phpunit
