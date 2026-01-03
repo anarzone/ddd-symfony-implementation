@@ -8,10 +8,10 @@ use App\Inventory\Domain\Model\Stock\SKU;
 use App\Inventory\Domain\Model\Stock\Stock;
 use App\Inventory\Domain\Model\Warehouse\Warehouse;
 use Doctrine\Bundle\FixturesBundle\Fixture;
-use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
+use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
 
-class StockFixtures extends Fixture implements FixtureGroupInterface
+class StockFixtures extends Fixture implements DependentFixtureInterface
 {
     public function load(ObjectManager $manager): void
     {
@@ -71,5 +71,12 @@ class StockFixtures extends Fixture implements FixtureGroupInterface
     public static function getGroups(): array
     {
         return ['all'];
+    }
+
+    public function getDependencies(): array
+    {
+        return [
+            WarehouseFixtures::class,
+        ];
     }
 }

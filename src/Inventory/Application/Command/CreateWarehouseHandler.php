@@ -23,8 +23,8 @@ readonly class CreateWarehouseHandler
             address: $message->address,
             city: $message->city,
             postalCode: $message->postalCode,
-            latitude: $message->latitude !== null ? (string) $message->latitude : null,
-            longitude: $message->longitude !== null ? (string) $message->longitude : null
+            latitude: $message->latitude !== null ? $message->latitude : null,
+            longitude: $message->longitude !== null ? $message->longitude : null
         );
 
         $warehouse = new Warehouse(

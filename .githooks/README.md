@@ -28,8 +28,9 @@ The `pre-commit` hook automatically runs before each commit:
 
 1. **PHP CS Fixer** - Checks code style (doesn't modify files)
 2. **PHPStan** - Runs static analysis
+3. **PHPUnit** - Runs test suite
 
-If either check fails, the commit is blocked.
+If any check fails, the commit is blocked.
 
 ### Bypassing the Hook
 
@@ -52,6 +53,9 @@ composer format
 
 # Run static analysis
 composer analyze
+
+# Run tests
+composer test
 
 # Run all checks
 composer check-all

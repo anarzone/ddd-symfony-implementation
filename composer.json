@@ -62,9 +62,11 @@
         "check-style": "vendor/bin/php-cs-fixer fix --diff --dry-run",
         "format": "vendor/bin/php-cs-fixer fix",
         "analyze": "vendor/bin/phpstan analyse src --memory-limit=1G",
+        "test": "vendor/bin/phpunit",
         "check-all": [
             "@check-style",
-            "@analyze"
+            "@analyze",
+            "@test"
         ],
         "auto-scripts": {
             "cache:clear": "symfony-cmd",

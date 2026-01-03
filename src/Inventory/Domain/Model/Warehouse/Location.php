@@ -18,9 +18,9 @@ readonly class Location
         #[ORM\Column(type: Types::STRING, length: 10)]
         public string $postalCode,
         #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 8, nullable: true)]
-        public ?string $latitude,
+        public ?float $latitude,
         #[ORM\Column(type: Types::DECIMAL, precision: 11, scale: 8, nullable: true)]
-        public ?string $longitude
+        public ?float $longitude
     ) {
         $this->validate();
     }
