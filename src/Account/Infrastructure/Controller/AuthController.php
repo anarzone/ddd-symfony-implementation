@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Account\Infrastructure\Controller;
 
-use App\Account\Domain\Repository\ApiTokenRepositoryInterface;
-use App\Account\Domain\Repository\UserRepositoryInterface;
 use App\Account\Application\Command\GenerateApiTokenMessage;
+use App\Account\Domain\Repository\UserRepositoryInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,7 +19,7 @@ use Symfony\Component\Routing\Attribute\Route;
 class AuthController extends AbstractController
 {
     public function __construct(
-        private readonly UserRepositoryInterface     $userRepository,
+        private readonly UserRepositoryInterface $userRepository,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly MessageBusInterface $bus
     ) {
@@ -31,7 +32,7 @@ class AuthController extends AbstractController
 
         if (!isset($data['email']) || !isset($data['password'])) {
             return new JsonResponse([
-                'error' => 'Email and password are required'
+                'error' => 'Email and password are required',
             ], Response::HTTP_BAD_REQUEST);
         }
 
@@ -39,13 +40,13 @@ class AuthController extends AbstractController
 
         if (!$user) {
             return new JsonResponse([
-                'error' => 'Invalid credentials'
+                'error' => 'Invalid credentials',
             ], Response::HTTP_UNAUTHORIZED);
         }
 
         if (!$this->passwordHasher->isPasswordValid($user, $data['password'])) {
             return new JsonResponse([
-                'error' => 'Invalid credentials'
+                'error' => 'Invalid credentials',
             ], Response::HTTP_UNAUTHORIZED);
         }
 
@@ -61,7 +62,7 @@ class AuthController extends AbstractController
 
         if (!$handledStamp) {
             return new JsonResponse([
-                'error' => 'Failed to generate token'
+                'error' => 'Failed to generate token',
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 
@@ -70,13 +71,12 @@ class AuthController extends AbstractController
         return new JsonResponse([
             'message' => 'Login successful',
             'user' => [
-                'id' => $user->id,
-                'email' => $user->email,
-                'roles' => $user->getRoles()
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'roles' => $user->getRoles(),
             ],
             'token' => $tokenData['token'],
-            'tokenId' => $tokenData['tokenId']
+            'tokenId' => $tokenData['tokenId'],
         ], Response::HTTP_OK);
     }
 }
-

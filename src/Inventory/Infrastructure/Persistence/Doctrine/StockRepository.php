@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Inventory\Infrastructure\Persistence\Doctrine;
 
 use App\Inventory\Domain\Model\Stock\Stock;
 use App\Inventory\Domain\Repository\StockRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\DBAL\LockMode;
+use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Uid\UuidV7;
 
 class StockRepository extends ServiceEntityRepository implements StockRepositoryInterface
@@ -26,7 +28,7 @@ class StockRepository extends ServiceEntityRepository implements StockRepository
     public function findAllWithWarehouse(): ?array
     {
         return $this->createQueryBuilder('s')
-            ->leftJoin('s.warehouse','w')
+            ->leftJoin('s.warehouse', 'w')
             ->addSelect('w')
             ->getQuery()
             ->getResult();
@@ -37,6 +39,4 @@ class StockRepository extends ServiceEntityRepository implements StockRepository
         $this->getEntityManager()->persist($stock);
         $this->getEntityManager()->flush();
     }
-
-
 }

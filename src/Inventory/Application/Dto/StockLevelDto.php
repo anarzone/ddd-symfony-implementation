@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Inventory\Application\Dto;
 
 readonly class StockLevelDto
 {
     public function __construct(
-        public int $stockId,
+        public string $stockId,
         public string $skuCode,
         public string $skuName,
         public int $totalQuantity,
@@ -13,7 +15,8 @@ readonly class StockLevelDto
         public int $reservedQuantity,
         public string $warehouseName,
         public string $location
-    ) {}
+    ) {
+    }
 
     public function toArray(): array
     {
@@ -21,17 +24,17 @@ readonly class StockLevelDto
             'stockId' => $this->stockId,
             'sku' => [
                 'code' => $this->skuCode,
-                'name' => $this->skuName
+                'name' => $this->skuName,
             ],
             'quantities' => [
                 'total' => $this->totalQuantity,
                 'available' => $this->availableQuantity,
-                'reserved' => $this->reservedQuantity
+                'reserved' => $this->reservedQuantity,
             ],
             'warehouse' => [
                 'name' => $this->warehouseName,
-                'location' => $this->location
-            ]
+                'location' => $this->location,
+            ],
         ];
     }
 }

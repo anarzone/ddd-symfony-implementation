@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Inventory\Application\Command;
 
 use App\Inventory\Domain\Model\Warehouse\Location;
@@ -12,7 +14,8 @@ readonly class CreateWarehouseHandler
 {
     public function __construct(
         private WarehouseRepositoryInterface $warehouseRepository
-    ) {}
+    ) {
+    }
 
     public function __invoke(CreateWarehouseMessage $message): array
     {
@@ -20,8 +23,8 @@ readonly class CreateWarehouseHandler
             address: $message->address,
             city: $message->city,
             postalCode: $message->postalCode,
-            latitude: $message->latitude,
-            longitude: $message->longitude
+            latitude: $message->latitude !== null ? (string) $message->latitude : null,
+            longitude: $message->longitude !== null ? (string) $message->longitude : null
         );
 
         $warehouse = new Warehouse(
@@ -37,7 +40,7 @@ readonly class CreateWarehouseHandler
 
         return [
             'warehouseId' => $warehouse->id,
-            'name' => $warehouse->name
+            'name' => $warehouse->name,
         ];
     }
 }

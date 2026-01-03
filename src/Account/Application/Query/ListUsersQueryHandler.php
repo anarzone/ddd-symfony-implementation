@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Account\Application\Query;
 
 use App\Account\Domain\Repository\UserRepositoryInterface;
@@ -19,10 +21,10 @@ readonly class ListUsersQueryHandler
 
         return array_map(function ($user) {
             return [
-                'id' => $user->id,
-                'email' => $user->email,
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
                 'roles' => $user->getRoles(),
-                'createdAt' => $user->createdAt->format(\DateTime::ATOM)
+                'createdAt' => $user->getCreatedAt()->format(\DateTime::ATOM),
             ];
         }, $users);
     }

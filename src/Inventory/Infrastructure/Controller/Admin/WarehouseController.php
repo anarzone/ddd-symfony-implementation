@@ -1,12 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Inventory\Infrastructure\Controller\Admin;
 
 use App\Inventory\Application\Command\CreateWarehouseMessage;
 use App\Inventory\Application\Dto\WarehouseInfoDto;
-use App\Inventory\Domain\Model\Stock\Stock;
 use App\Inventory\Domain\Repository\WarehouseRepositoryInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,7 +22,8 @@ class WarehouseController extends AbstractController
     public function __construct(
         private MessageBusInterface $bus,
         private WarehouseRepositoryInterface $warehouseRepository
-    ) {}
+    ) {
+    }
 
     #[Route('', methods: ['POST'])]
     public function create(Request $request): JsonResponse
@@ -45,11 +46,11 @@ class WarehouseController extends AbstractController
 
             return new JsonResponse([
                 'message' => 'Warehouse created successfully',
-                'data' => $result
+                'data' => $result,
             ], Response::HTTP_CREATED);
         } catch (\Exception $e) {
             return new JsonResponse([
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], Response::HTTP_BAD_REQUEST);
         }
     }
@@ -59,22 +60,22 @@ class WarehouseController extends AbstractController
     {
         $warehouse = $this->warehouseRepository->find($id);
 
-        if (!$warehouse) {
+        if (!$warehouse || $warehouse->id === null) {
             return new JsonResponse(['error' => 'Warehouse not found'], Response::HTTP_NOT_FOUND);
         }
 
         $dto = new WarehouseInfoDto(
-            id: $warehouse->getId(),
+            id: $warehouse->id->toRfc4122(),
             name: $warehouse->name,
-            capacity: $warehouse->capacity,
+            capacity: $warehouse->getCapacity(),
             currentStock: 0,
             isActive: $warehouse->isOpen(),
-            type: $warehouse->type,
-            address: $warehouse->location->address,
-            city: $warehouse->location->city,
-            postalCode: $warehouse->location->postalCode,
-            latitude: $warehouse->location->latitude,
-            longitude: $warehouse->location->longitude
+            type: $warehouse->type->name,
+            address: $warehouse->getLocation()->address,
+            city: $warehouse->getLocation()->city,
+            postalCode: $warehouse->getLocation()->postalCode,
+            latitude: $warehouse->getLocation()->latitude !== null ? (float) $warehouse->getLocation()->latitude : null,
+            longitude: $warehouse->getLocation()->longitude !== null ? (float) $warehouse->getLocation()->longitude : null
         );
 
         return new JsonResponse($dto->toArray());
@@ -85,21 +86,21 @@ class WarehouseController extends AbstractController
     {
         $warehouses = $this->warehouseRepository->findAll();
 
-        $dtos = array_map(fn($w) => new WarehouseInfoDto(
-            id: $w->getId(),
+        $dtos = array_map(fn ($w) => new WarehouseInfoDto(
+            id: $w->id !== null ? $w->id->toRfc4122() : '',
             name: $w->name,
-            capacity: $w->capacity,
+            capacity: $w->getCapacity(),
             currentStock: 0,
             isActive: $w->isOpen(),
-            type: $w->type,
-            address: $w->location->address,
-            city: $w->location->city,
-            postalCode: $w->location->postalCode,
-            latitude: $w->location->latitude,
-            longitude: $w->location->longitude
+            type: $w->type->name,
+            address: $w->getLocation()->address,
+            city: $w->getLocation()->city,
+            postalCode: $w->getLocation()->postalCode,
+            latitude: $w->getLocation()->latitude !== null ? (float) $w->getLocation()->latitude : null,
+            longitude: $w->getLocation()->longitude !== null ? (float) $w->getLocation()->longitude : null
         ), $warehouses);
 
-        return new JsonResponse(array_map(fn($dto) => $dto->toArray(), $dtos));
+        return new JsonResponse(array_map(fn ($dto) => $dto->toArray(), $dtos));
     }
 
     #[Route('/{id}/activate', methods: ['PATCH'])]
@@ -111,11 +112,7 @@ class WarehouseController extends AbstractController
             return new JsonResponse(['error' => 'Warehouse not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $reflection = new \ReflectionClass($warehouse);
-        $property = $reflection->getProperty('isActive');
-        $property->setAccessible(true);
-        $property->setValue($warehouse, true);
-
+        $warehouse->activate();
         $this->warehouseRepository->save($warehouse);
 
         return new JsonResponse(['message' => 'Warehouse activated']);
@@ -130,11 +127,7 @@ class WarehouseController extends AbstractController
             return new JsonResponse(['error' => 'Warehouse not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $reflection = new \ReflectionClass($warehouse);
-        $property = $reflection->getProperty('isActive');
-        $property->setAccessible(true);
-        $property->setValue($warehouse, false);
-
+        $warehouse->deactivate();
         $this->warehouseRepository->save($warehouse);
 
         return new JsonResponse(['message' => 'Warehouse deactivated']);

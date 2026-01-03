@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Inventory\Application\Query;
 
 use App\Inventory\Application\Dto\StockLevelDto;
@@ -11,7 +13,8 @@ readonly class GetStockLevelQueryHandler
 {
     public function __construct(
         private StockRepositoryInterface $stockRepository
-    ) {}
+    ) {
+    }
 
     public function __invoke(GetStockLevelQuery $query): StockLevelDto
     {
@@ -22,16 +25,14 @@ readonly class GetStockLevelQueryHandler
         }
 
         return new StockLevelDto(
-            stockId: $stock->getId(),
+            stockId: $stock->id !== null ? $stock->id->toRfc4122() : '',
             skuCode: $stock->sku->code,
             skuName: $stock->sku->name,
             totalQuantity: $stock->totalQuantity,
             availableQuantity: $stock->getAvailableQuantity(),
             reservedQuantity: $stock->getReservedQuantity(),
             warehouseName: $stock->warehouse->name,
-            location: $stock->warehouse->location->city . ', ' . $stock->warehouse->location->address
+            location: $stock->warehouse->getLocation()->city.', '.$stock->warehouse->getLocation()->address
         );
     }
-
-
 }

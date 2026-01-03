@@ -22,7 +22,7 @@ php bin/console doctrine:fixtures:load
 ```
 
 This creates:
-- **Admin User**: `admin@fastreserve.com` / `admin123`
+- **Admin User**: (check fixtures for actual credentials)
 - **5 Warehouses**
 - **1,000 Stock Items** (200 per warehouse)
 
@@ -42,8 +42,8 @@ Login and automatically generate an API token.
 **Request:**
 ```json
 {
-  "email": "admin@fastreserve.com",
-  "password": "admin123",
+  "email": "YOUR_ADMIN_EMAIL",
+  "password": "YOUR_ADMIN_PASSWORD",
   "description": "Optional token description",
   "expiresInDays": 30  // Optional, default 30 days
 }
@@ -55,10 +55,10 @@ Login and automatically generate an API token.
   "message": "Login successful",
   "user": {
     "id": 1,
-    "email": "admin@fastreserve.com",
+    "email": "YOUR_ADMIN_EMAIL",
     "roles": ["ROLE_ADMIN", "ROLE_USER"]
   },
-  "token": "abc123xyz...",  // Your API token - SAVE THIS!
+  "token": "YOUR_GENERATED_API_TOKEN",  // Your API token - SAVE THIS!
   "tokenId": 1
 }
 ```
@@ -76,8 +76,8 @@ Create a new user.
 **Request:**
 ```json
 {
-  "email": "new.user@fastreserve.com",
-  "password": "securePassword123",
+  "email": "user@example.com",
+  "password": "SECURE_PASSWORD",
   "roles": ["ROLE_USER"]  // or ["ROLE_ADMIN"] for admin users
 }
 ```
@@ -86,7 +86,7 @@ Create a new user.
 ```json
 {
   "id": 2,
-  "email": "new.user@fastreserve.com",
+  "email": "user@example.com",
   "roles": ["ROLE_USER"],
   "createdAt": "2024-12-27T20:00:00+00:00"
 }
@@ -100,13 +100,13 @@ List all users in the system.
 [
   {
     "id": 1,
-    "email": "admin@fastreserve.com",
+    "email": "admin@example.com",
     "roles": ["ROLE_ADMIN", "ROLE_USER"],
     "createdAt": "2024-12-27T20:00:00+00:00"
   },
   {
     "id": 2,
-    "email": "new.user@fastreserve.com",
+    "email": "user@example.com",
     "roles": ["ROLE_USER"],
     "createdAt": "2024-12-27T20:00:00+00:00"
   }
@@ -161,23 +161,23 @@ Reserve stock items.
 curl -X POST http://localhost:8000/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "admin@fastreserve.com",
-    "password": "admin123",
+    "email": "YOUR_ADMIN_EMAIL",
+    "password": "YOUR_ADMIN_PASSWORD",
     "description": "Initial admin token"
   }'
 ```
 
-**Save the token from the response:** `abc123xyz...`
+**Save the token from the response:** `YOUR_GENERATED_API_TOKEN`
 
 ### Step 2: Create a New User
 
 ```bash
 curl -X POST http://localhost:8000/api/users \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer abc123xyz..." \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -d '{
-    "email": "warehouse.manager@fastreserve.com",
-    "password": "manager123",
+    "email": "warehouse.manager@example.com",
+    "password": "MANAGER_PASSWORD",
     "roles": ["ROLE_USER"]
   }'
 ```
@@ -188,25 +188,25 @@ curl -X POST http://localhost:8000/api/users \
 curl -X POST http://localhost:8000/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "warehouse.manager@fastreserve.com",
-    "password": "manager123",
+    "email": "warehouse.manager@example.com",
+    "password": "MANAGER_PASSWORD",
     "description": "Warehouse manager token"
   }'
 ```
 
-**Save the new token:** `xyz789abc...`
+**Save the new token:** `YOUR_MANAGER_TOKEN`
 
 ### Step 4: Use Token to Access Protected Resources
 
 ```bash
 # List warehouses (admin only - will fail for regular user)
 curl http://localhost:8000/api/admin/warehouses \
-  -H "Authorization: Bearer abc123xyz..."
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
 
 # Reserve stock (user or admin)
 curl -X POST http://localhost:8000/api/reserve \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer xyz789abc..." \
+  -H "Authorization: Bearer YOUR_MANAGER_TOKEN" \
   -d '{
     "stockId": 1,
     "quantity": 10,
@@ -325,7 +325,7 @@ Built-in HTTP client support. Just open the `.http` files and click the green pl
 ## Troubleshooting
 
 ### "Invalid credentials" on login
-- Check email/password matches fixtures: `admin@fastreserve.com` / `admin123`
+- Check email/password matches fixtures
 - Verify fixtures are loaded: `php bin/console doctrine:fixtures:load`
 
 ### "User with this email already exists"

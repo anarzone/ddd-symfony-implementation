@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Account\Domain\Model;
 
-use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
@@ -27,22 +28,22 @@ class ApiToken
     public ?string $description = null;
 
     #[ORM\Column]
-    public DateTimeImmutable $createdAt;
+    public \DateTimeImmutable $createdAt;
 
     #[ORM\Column(nullable: true)]
-    public ?DateTimeImmutable $expiresAt = null;
+    public ?\DateTimeImmutable $expiresAt = null;
 
     #[ORM\Column(nullable: true)]
-    public ?DateTimeImmutable $lastUsedAt = null;
+    public ?\DateTimeImmutable $lastUsedAt = null;
 
     public function __construct(
         User $user,
         string $token,
         ?string $description = null,
-        ?\DateTimeImmutable $expiresAt = null
+        ?\DateTimeImmutable $expiresAt = null,
     ) {
         $this->user = $user;
-        $this->token = password_hash($token, PASSWORD_BCRYPT); // Secure hash
+        $this->token = password_hash($token, \PASSWORD_BCRYPT); // Secure hash
         $this->description = $description;
         $this->expiresAt = $expiresAt;
         $this->createdAt = new \DateTimeImmutable();
@@ -50,7 +51,7 @@ class ApiToken
 
     public function isValid(): bool
     {
-        return $this->expiresAt === null || $this->expiresAt > new DateTimeImmutable();
+        return $this->expiresAt === null || $this->expiresAt > new \DateTimeImmutable();
     }
 
     public function verify(string $plainToken): bool

@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Inventory\Application\Command;
 
 use App\Account\Domain\Repository\UserRepositoryInterface;
-use App\Inventory\Application\Dto\ReservationResponseDto;
 use App\Inventory\Domain\Exception\InsufficientStockException;
 use App\Inventory\Domain\Repository\StockRepositoryInterface;
 use App\Inventory\Domain\Service\StockDomainService;
@@ -16,7 +17,8 @@ readonly class ReserveStockHandler
         private StockRepositoryInterface $stockRepository,
         private UserRepositoryInterface $userRepository,
         private StockDomainService $domainService
-    ) {}
+    ) {
+    }
 
     /**
      * @throws InsufficientStockException
@@ -38,7 +40,7 @@ readonly class ReserveStockHandler
         try {
             $this->domainService->reserveStock($stock, $user, $message->quantity, $message->minutesValid);
             $this->stockRepository->save($stock);
-        }catch (InsufficientStockException $e){
+        } catch (InsufficientStockException $e) {
             throw new InsufficientStockException($e->getMessage());
         }
     }

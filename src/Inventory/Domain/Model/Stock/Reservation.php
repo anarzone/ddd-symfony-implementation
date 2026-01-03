@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Inventory\Domain\Model\Stock;
 
 use App\Account\Domain\Model\User;
@@ -26,7 +28,7 @@ class Reservation
     }
 
     #[ORM\Column]
-    public int $quantity{
+    public int $quantity {
         get => $this->quantity;
     }
 

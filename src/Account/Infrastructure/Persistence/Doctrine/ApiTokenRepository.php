@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Account\Infrastructure\Persistence\Doctrine;
 
 use App\Account\Domain\Model\ApiToken;
@@ -18,7 +20,8 @@ class ApiTokenRepository extends ServiceEntityRepository implements ApiTokenRepo
     public function findByToken(string $token): ?ApiToken
     {
         $tokens = $this->findAll();
-        return array_find($tokens, fn($apiToken) => $apiToken->verify($token));
+
+        return array_find($tokens, fn ($apiToken) => $apiToken->verify($token));
     }
 
     public function findActiveTokens(User $user): array
@@ -50,7 +53,7 @@ class ApiTokenRepository extends ServiceEntityRepository implements ApiTokenRepo
         $this->createQueryBuilder('at')
             ->delete()
             ->where('at.user = :user')
-            ->setParameter('user',$user)
+            ->setParameter('user', $user)
             ->getQuery()
             ->execute();
     }

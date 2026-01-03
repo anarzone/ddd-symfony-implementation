@@ -1,0 +1,16 @@
+includes:
+    - vendor/phpstan/phpstan-symfony/extension.neon
+
+parameters:
+    level: 5
+
+    paths:
+        - src
+
+    excludePaths:
+        - 'src/**/DataFixtures/*'
+
+    ignoreErrors:
+        - '#Property .* is never read, only written#'
+        - '#Property .* is never assigned#'
+

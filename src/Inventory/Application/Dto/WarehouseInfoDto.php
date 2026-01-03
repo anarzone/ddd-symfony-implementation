@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Inventory\Application\Dto;
 
 readonly class WarehouseInfoDto
@@ -16,7 +18,8 @@ readonly class WarehouseInfoDto
         public string $postalCode,
         public ?float $latitude,
         public ?float $longitude
-    ) {}
+    ) {
+    }
 
     public function toArray(): array
     {
@@ -33,8 +36,8 @@ readonly class WarehouseInfoDto
                 'postalCode' => $this->postalCode,
                 'coordinates' => $this->latitude && $this->longitude
                     ? ['lat' => $this->latitude, 'lng' => $this->longitude]
-                    : null
-            ]
+                    : null,
+            ],
         ];
     }
 }

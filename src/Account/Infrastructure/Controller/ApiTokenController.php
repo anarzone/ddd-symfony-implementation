@@ -1,13 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Account\Infrastructure\Controller;
 
 use App\Account\Application\Command\GenerateApiTokenMessage;
 use App\Account\Application\Query\ListApiTokensQuery;
+use App\Account\Domain\Model\User;
 use App\Account\Domain\Repository\ApiTokenRepositoryInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\HandledStamp;
@@ -15,12 +18,11 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/api/tokens')]
-
 class ApiTokenController extends AbstractController
 {
     public function __construct(
         private MessageBusInterface $bus,
-        private ApiTokenRepositoryInterface $apiTokenRepository
+        private ApiTokenRepositoryInterface $apiTokenRepository,
     ) {
     }
 
@@ -29,7 +31,7 @@ class ApiTokenController extends AbstractController
     public function generate(Request $request): JsonResponse
     {
         $user = $this->getUser();
-        if (!$user) {
+        if (!$user instanceof User) {
             return new JsonResponse(['error' => 'User not authenticated'], Response::HTTP_UNAUTHORIZED);
         }
 
@@ -41,14 +43,12 @@ class ApiTokenController extends AbstractController
             expiresInDays: $data['expiresInDays'] ?? null
         );
 
-        $envelope = $this->bus->dispatch($message);
-        $handledStamp = $envelope->last(HandledStamp::class);
+        $this->bus->dispatch($message);
 
-        if (!$handledStamp) {
-            return new JsonResponse(['error' => 'Failed to generate token'], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-
-        return new JsonResponse($handledStamp->getResult(), Response::HTTP_CREATED);
+        return new JsonResponse([
+            'message' => 'Token generation request added for processing',
+            'data' => [],
+        ], Response::HTTP_ACCEPTED);
     }
 
     #[Route('', methods: ['GET'])]
@@ -56,7 +56,7 @@ class ApiTokenController extends AbstractController
     public function list(): JsonResponse
     {
         $user = $this->getUser();
-        if (!$user) {
+        if (!$user instanceof User) {
             return new JsonResponse(['error' => 'User not authenticated'], Response::HTTP_UNAUTHORIZED);
         }
 
@@ -79,7 +79,7 @@ class ApiTokenController extends AbstractController
     public function revoke(string $id): JsonResponse
     {
         $user = $this->getUser();
-        if (!$user) {
+        if (!$user instanceof User) {
             return new JsonResponse(['error' => 'User not authenticated'], Response::HTTP_UNAUTHORIZED);
         }
 
@@ -90,7 +90,7 @@ class ApiTokenController extends AbstractController
         }
 
         // Verify the token belongs to the current user
-        if ($token->user->getId() !== $user->id) {
+        if ($token->user->getId() !== $user->getId()) {
             return new JsonResponse(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
         }
 

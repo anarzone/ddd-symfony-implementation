@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Inventory\Domain\Model\Warehouse;
 
 use App\Inventory\Domain\Model\Stock\Stock;
@@ -64,10 +66,33 @@ class Warehouse
     }
 
     // Domain Logic
-    public function isOpen(): bool { return $this->isActive; }
+    public function isOpen(): bool
+    {
+        return $this->isActive;
+    }
 
     public function changeType(WarehouseTypeEnum $type): void
     {
         $this->type = $type;
+    }
+
+    public function activate(): void
+    {
+        $this->isActive = true;
+    }
+
+    public function deactivate(): void
+    {
+        $this->isActive = false;
+    }
+
+    public function getLocation(): Location
+    {
+        return $this->location;
+    }
+
+    public function getCapacity(): int
+    {
+        return $this->capacity;
     }
 }

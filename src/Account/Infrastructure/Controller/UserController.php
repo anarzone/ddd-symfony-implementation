@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Account\Infrastructure\Controller;
 
 use App\Account\Application\Command\CreateUserMessage;
@@ -29,7 +31,7 @@ class UserController extends AbstractController
 
         if (!isset($data['email']) || !isset($data['password'])) {
             return new JsonResponse([
-                'error' => 'Email and password are required'
+                'error' => 'Email and password are required',
             ], Response::HTTP_BAD_REQUEST);
         }
 
@@ -45,14 +47,14 @@ class UserController extends AbstractController
 
             if (!$handledStamp) {
                 return new JsonResponse([
-                    'error' => 'Failed to create user'
+                    'error' => 'Failed to create user',
                 ], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
 
             return new JsonResponse($handledStamp->getResult(), Response::HTTP_CREATED);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse([
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], Response::HTTP_BAD_REQUEST);
         }
     }
@@ -68,7 +70,7 @@ class UserController extends AbstractController
 
         if (!$handledStamp) {
             return new JsonResponse([
-                'error' => 'Failed to retrieve users'
+                'error' => 'Failed to retrieve users',
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 

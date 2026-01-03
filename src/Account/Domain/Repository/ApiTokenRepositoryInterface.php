@@ -1,13 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Account\Domain\Repository;
 
 use App\Account\Domain\Model\ApiToken;
 use App\Account\Domain\Model\User;
 
+/**
+ * @method ApiToken|null find(string $id)
+ */
 interface ApiTokenRepositoryInterface
 {
     public function findByToken(string $token): ?ApiToken;
+
     public function findActiveTokens(User $user): array;
 
     public function save(ApiToken $token): void;

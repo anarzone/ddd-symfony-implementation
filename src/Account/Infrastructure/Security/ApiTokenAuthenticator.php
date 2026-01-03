@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Account\Infrastructure\Security;
 
 use App\Account\Domain\Repository\ApiTokenRepositoryInterface;
@@ -16,9 +18,8 @@ use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPasspor
 
 class ApiTokenAuthenticator extends AbstractAuthenticator
 {
-
     public function __construct(
-        private readonly ApiTokenRepositoryInterface $apiTokenRepository
+        private readonly ApiTokenRepositoryInterface $apiTokenRepository,
     ) {
     }
 
@@ -55,7 +56,7 @@ class ApiTokenAuthenticator extends AbstractAuthenticator
         $user = $token->user;
 
         return new SelfValidatingPassport(
-            new UserBadge($user->getUserIdentifier(), fn() => $user)
+            new UserBadge($user->getUserIdentifier(), fn () => $user)
         );
     }
 
@@ -68,7 +69,7 @@ class ApiTokenAuthenticator extends AbstractAuthenticator
     {
         $data = [
             'error' => 'Authentication failed',
-            'message' => strtr($exception->getMessageKey(), $exception->getMessageData())
+            'message' => strtr($exception->getMessageKey(), $exception->getMessageData()),
         ];
 
         return new JsonResponse($data, Response::HTTP_UNAUTHORIZED);

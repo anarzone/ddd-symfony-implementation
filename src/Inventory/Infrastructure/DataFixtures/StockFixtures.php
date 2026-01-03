@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Inventory\Infrastructure\DataFixtures;
 
 use App\Inventory\Domain\Model\Stock\SKU;
@@ -23,7 +25,7 @@ class StockFixtures extends Fixture implements FixtureGroupInterface
             'Toaster', 'Keyboard', 'Bed Frame', 'Jacket', 'Doll', 'Tire', 'Magazine',
             'Baseball Glove', 'Hose', 'First Aid Kit', 'Microwave', 'Mouse', 'Dresser',
             'Scarf', 'RC Car', 'Spark Plugs', 'Comic Book', 'Golf Clubs', 'Fertilizer',
-            'Bandages', 'Air Fryer', 'Webcam', 'Nightstand', 'Polo', 'Drone', 'Brake Pads'
+            'Bandages', 'Air Fryer', 'Webcam', 'Nightstand', 'Polo', 'Drone', 'Brake Pads',
         ];
 
         $stockIndex = 0;
@@ -31,16 +33,16 @@ class StockFixtures extends Fixture implements FixtureGroupInterface
         $skuIndex = 0;
 
         // Create 200 stock items per warehouse (1000 total)
-        for ($warehouseNum = 1; $warehouseNum <= 5; $warehouseNum++) {
-            $warehouse = $this->getReference('warehouse-' . $warehouseNum, Warehouse::class);
+        for ($warehouseNum = 1; $warehouseNum <= 5; ++$warehouseNum) {
+            $warehouse = $this->getReference('warehouse-'.$warehouseNum, Warehouse::class);
 
-            for ($i = 0; $i < 200; $i++) {
-                $category = $categories[$skuIndex % count($categories)];
-                $product = $products[$skuIndex % count($products)];
-                $sequence = floor($skuIndex / count($products)) + 1;
+            for ($i = 0; $i < 200; ++$i) {
+                $category = $categories[$skuIndex % \count($categories)];
+                $product = $products[$skuIndex % \count($products)];
+                $sequence = floor($skuIndex / \count($products)) + 1;
 
-                $skuCode = sprintf('%s-%s-%04d', $category, strtoupper(substr($product, 0, 5)), $sequence);
-                $skuName = sprintf('%s %s', $product, $sequence);
+                $skuCode = \sprintf('%s-%s-%04d', $category, strtoupper(substr($product, 0, 5)), $sequence);
+                $skuName = \sprintf('%s %s', $product, $sequence);
 
                 $sku = new SKU($skuCode, $skuName);
 
@@ -50,15 +52,15 @@ class StockFixtures extends Fixture implements FixtureGroupInterface
                 $stock = new Stock($warehouse, $sku, $quantity);
                 $manager->persist($stock);
 
-                $skuIndex++;
-                $stockIndex++;
+                ++$skuIndex;
+                ++$stockIndex;
 
                 // Flush every 100 items to avoid memory issues
                 if ($stockIndex % 100 === 0) {
                     $manager->flush();
                     $manager->clear();
                     // Re-fetch warehouse reference after clearing
-                    $warehouse = $this->getReference('warehouse-' . $warehouseNum, Warehouse::class);
+                    $warehouse = $this->getReference('warehouse-'.$warehouseNum, Warehouse::class);
                 }
             }
         }

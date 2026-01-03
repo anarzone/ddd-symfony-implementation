@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Inventory\Domain\Model\Stock;
 
 use App\Account\Domain\Model\User;
@@ -32,7 +34,7 @@ class Stock
         get => $this->totalQuantity;
 
         set(int $quantity) {
-            if ($quantity < 0){
+            if ($quantity < 0) {
                 throw new \InvalidArgumentException('Total quantity cannot be negative');
             }
             $this->totalQuantity = $quantity;
@@ -65,7 +67,7 @@ class Stock
     {
         return array_reduce(
             $this->reservations->toArray(),
-            fn(int $carry, Reservation $r) => $r->isActive() ? $carry + $r->quantity : $carry,
+            fn (int $carry, Reservation $r) => $r->isActive() ? $carry + $r->quantity : $carry,
             0
         );
     }
@@ -86,7 +88,7 @@ class Stock
 
         if ($this->getAvailableQuantity() < $quantity) {
             throw new InsufficientStockException(
-                sprintf(
+                \sprintf(
                     'Only %d units available, cannot reserve %d',
                     $this->getAvailableQuantity(),
                     $quantity
@@ -109,7 +111,7 @@ class Stock
 
         if ($newQuantity < $reservedQuantity) {
             throw new InsufficientStockException(
-                sprintf(
+                \sprintf(
                     'Cannot reduce quantity below reserved amount (%d)',
                     $reservedQuantity
                 )

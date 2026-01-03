@@ -1,16 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Account\Domain\Model;
 
 use App\Inventory\Domain\Model\Stock\Reservation;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Uid\Uuid;
-use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Index(name: 'idx_user_email', columns: ['email'])]
@@ -54,7 +56,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function promoteToAdmin(): void
     {
-        if (!in_array('ROLE_ADMIN', $this->roles)) {
+        if (!\in_array('ROLE_ADMIN', $this->roles)) {
             $this->roles[] = 'ROLE_ADMIN';
         }
     }
@@ -64,13 +66,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->id;
     }
 
+    public function getEmail(): string
+    {
+        return $this->email;
+    }
+
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
     public function getRoles(): array
     {
         $roles = $this->roles;
         $roles[] = 'ROLE_USER';
+
         return array_unique($roles);
     }
-
 
     public function hashPassword(string $password): static
     {
@@ -84,10 +96,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->email;
     }
 
-    public function activeReservations(): ArrayCollection
+    public function activeReservations(): Collection
     {
         return $this->reservations->filter(
-            fn(Reservation $r) => $r->isActive()
+            fn (Reservation $r) => $r->isActive()
         );
     }
 }

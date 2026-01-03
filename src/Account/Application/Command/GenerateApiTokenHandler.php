@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Account\Application\Command;
 
 use App\Account\Domain\Model\ApiToken;
@@ -14,7 +16,7 @@ readonly class GenerateApiTokenHandler
     ) {
     }
 
-    public function __invoke(GenerateApiTokenMessage $message)
+    public function __invoke(GenerateApiTokenMessage $message): void
     {
         $plainToken = bin2hex(random_bytes(32));
 
@@ -31,13 +33,5 @@ readonly class GenerateApiTokenHandler
         );
 
         $this->apiTokenRepository->save($apiToken);
-
-        return [
-            'tokenId' => $apiToken->id,
-            'token' => $plainToken, // Only shown once!
-            'description' => $apiToken->description,
-            'expiresAt' => $apiToken->expiresAt?->format(\DateTime::ATOM),
-            'createdAt' => $apiToken->createdAt->format(\DateTime::ATOM)
-        ];
     }
 }

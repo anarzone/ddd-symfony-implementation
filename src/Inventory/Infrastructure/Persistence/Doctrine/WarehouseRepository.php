@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Inventory\Infrastructure\Persistence\Doctrine;
 
 use App\Inventory\Domain\Model\Warehouse\Warehouse;

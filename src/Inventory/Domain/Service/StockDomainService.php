@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Inventory\Domain\Service;
 
 use App\Account\Domain\Model\User;
@@ -17,8 +19,7 @@ class StockDomainService
         User $user,
         int $quantity,
         int $minutesValid = 15
-    ): Reservation
-    {
+    ): Reservation {
         $activeReservations = $user->activeReservations();
 
         if ($activeReservations->count() >= 10) {
