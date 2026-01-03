@@ -14,7 +14,8 @@ use Zenstruck\Foundry\Test\ResetDatabase;
 
 class StockRepositoryTest extends WebTestCase
 {
-    use ResetDatabase, Factories;
+    use Factories;
+    use ResetDatabase;
 
     private Container $container;
     private EntityManagerInterface $em;
@@ -30,13 +31,13 @@ class StockRepositoryTest extends WebTestCase
 
     // ==================== findWithLock() Tests ====================
 
-    public function test_findStockById_withLock_returnsStock(): void
+    public function testFindStockByIdWithLockReturnsStock(): void
     {
         // Given: stock with 10 units exists
         $stock = StockFactory::createOne(['totalQuantity' => 10]);
 
         // When: fetching stock with lock
-        $this->em->wrapInTransaction(function() use ($stock, &$foundStock) {
+        $this->em->wrapInTransaction(function () use ($stock, &$foundStock) {
             $foundStock = $this->stockRepository->findWithLock($stock->id);
         });
 
@@ -45,13 +46,13 @@ class StockRepositoryTest extends WebTestCase
         $this->assertEquals(10, $foundStock->getAvailableQuantity());
     }
 
-    public function test_findStockById_whenNotFound_returnsNull(): void
+    public function testFindStockByIdWhenNotFoundReturnsNull(): void
     {
         // Given: non-existent UUID
         $nonExistentId = new \Symfony\Component\Uid\UuidV7();
 
         // When: fetching stock with lock
-        $this->em->wrapInTransaction(function() use ($nonExistentId, &$foundStock) {
+        $this->em->wrapInTransaction(function () use ($nonExistentId, &$foundStock) {
             $foundStock = $this->stockRepository->findWithLock($nonExistentId);
         });
 
@@ -61,7 +62,7 @@ class StockRepositoryTest extends WebTestCase
 
     // ==================== findAllWithWarehouse() Tests ====================
 
-    public function test_findAllStocks_returnsAllWithWarehouse(): void
+    public function testFindAllStocksReturnsAllWithWarehouse(): void
     {
         // Given: multiple stocks exist with warehouses
         StockFactory::createMany(3, ['totalQuantity' => 50]);
@@ -80,7 +81,7 @@ class StockRepositoryTest extends WebTestCase
         }
     }
 
-    public function test_findAllStocks_whenEmpty_returnsEmptyArray(): void
+    public function testFindAllStocksWhenEmptyReturnsEmptyArray(): void
     {
         // Given: database is empty (ResetDatabase trait handles this)
 
@@ -92,7 +93,7 @@ class StockRepositoryTest extends WebTestCase
         $this->assertCount(0, $stocks);
     }
 
-    public function test_findAllStocks_withMultipleStocks_returnsAll(): void
+    public function testFindAllStocksWithMultipleStocksReturnsAll(): void
     {
         // Given: stocks with different quantities
         StockFactory::createOne(['totalQuantity' => 10]);
@@ -105,7 +106,7 @@ class StockRepositoryTest extends WebTestCase
         // Then: all stocks are returned
         $this->assertCount(3, $stocks);
 
-        $quantities = array_map(fn($stock) => $stock->totalQuantity, $stocks);
+        $quantities = array_map(fn ($stock) => $stock->totalQuantity, $stocks);
         $this->assertContains(10, $quantities);
         $this->assertContains(20, $quantities);
         $this->assertContains(30, $quantities);
@@ -113,13 +114,13 @@ class StockRepositoryTest extends WebTestCase
 
     // ==================== save() Tests ====================
 
-    public function test_save_newStock_persistsToDatabase(): void
+    public function testSaveNewStockPersistsToDatabase(): void
     {
         // Given: stock created via factory (persisted by Foundry)
         $stockProxy = StockFactory::createOne(['totalQuantity' => 100]);
 
         // When: retrieving stock from database
-        $this->em->wrapInTransaction(function() use ($stockProxy, &$foundStock) {
+        $this->em->wrapInTransaction(function () use ($stockProxy, &$foundStock) {
             $foundStock = $this->stockRepository->findWithLock($stockProxy->id);
         });
 
@@ -128,12 +129,12 @@ class StockRepositoryTest extends WebTestCase
         $this->assertEquals(100, $foundStock->totalQuantity);
     }
 
-    public function test_save_existingStock_updatesChanges(): void
+    public function testSaveExistingStockUpdatesChanges(): void
     {
         // Given: existing stock via factory
         $stockProxy = StockFactory::createOne(['totalQuantity' => 50]);
 
-        $this->em->wrapInTransaction(function() use ($stockProxy, &$stock) {
+        $this->em->wrapInTransaction(function () use ($stockProxy, &$stock) {
             $stock = $this->stockRepository->findWithLock($stockProxy->id);
 
             // When: updating and saving stock
@@ -142,7 +143,7 @@ class StockRepositoryTest extends WebTestCase
         });
 
         // Then: changes are persisted
-        $this->em->wrapInTransaction(function() use ($stockProxy, &$updatedStock) {
+        $this->em->wrapInTransaction(function () use ($stockProxy, &$updatedStock) {
             $updatedStock = $this->stockRepository->findWithLock($stockProxy->id);
         });
 

@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Factory;
 
 use App\Inventory\Domain\Model\Stock\SKU;
 use App\Inventory\Domain\Model\Stock\Stock;
 use Zenstruck\Foundry\Persistence\PersistentObjectFactory;
+
 use function Zenstruck\Foundry\faker;
 
 final class StockFactory extends PersistentObjectFactory
