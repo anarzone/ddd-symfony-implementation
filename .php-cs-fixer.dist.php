@@ -1,13 +1,30 @@
 <?php
 
-$finder = (new PhpCsFixer\Finder())
-    ->in(__DIR__)
-    ->exclude('var')
-;
+declare(strict_types=1);
 
-return (new PhpCsFixer\Config())
+use PhpCsFixer\Config;
+use PhpCsFixer\Finder;
+
+$finder = Finder::create()
+    ->in(__DIR__ . '/src')
+    ->exclude('vendor')
+    ->exclude('var')
+    ->exclude('public/bundles');
+
+return (new Config())
     ->setRules([
         '@Symfony' => true,
+        '@Symfony:risky' => true,
+        '@PHP81Migration' => true,
+        'array_syntax' => ['syntax' => 'short'],
+        'declare_strict_types' => true,
+        'single_line_throw' => false,
+        'yoda_style' => [
+            'equal' => false,
+            'identical' => false,
+            'less_and_greater' => false,
+        ],
     ])
+    ->setRiskyAllowed(true)
     ->setFinder($finder)
-;
+    ->setLineEnding("\n");
