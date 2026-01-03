@@ -3,30 +3,71 @@ name: FastReserve CI
 on:
     push:
         branches:
-        - main
+            - main
     pull_request:
-        branches: ["main"]
+        branches: [ "main" ]
 jobs:
     quality:
         name: Code Quality Checks
         runs-on: ubuntu-latest
         steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+            -   name: Checkout code
+                uses: actions/checkout@v4
 
-            - name: Setup PHP
-              uses: shivammathur/setup-php@v2
-              with:
-                  php-version: '8.4'
-                  tools: composer:v2
-                  coverage: none
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: '8.4'
+                    tools: composer:v2
+                    coverage: none
 
-            - name:  Install Dependencies
-              run: composer install --no-progress --prefer-dist
+            -   name: Install Dependencies
+                run: composer install --no-progress --prefer-dist
 
-            - name: Check Code Style
-              run: composer check-style
+            -   name: Check Code Style
+                run: composer check-style
 
-            - name: Run Static Analysis
-              run: vendor/bin/phpstan analyse src --memory-limit=1G
+            -   name: Run Static Analysis
+                run: vendor/bin/phpstan analyse src --memory-limit=1G
 
+    tests:
+        needs: quality
+        runs-on: ubuntu-latest
+
+        services:
+            mysql:
+                image: mysql:8.0
+                env:
+                    MYSQL_ROOT_PASSWORD: root
+                    MYSQL_DATABASE: fastreserve_test
+                ports:
+                    - 3306:3306
+                options: >-
+                    --health-cmd="mysqladmin ping --silent"
+                    --health-interval=10s
+                    --health-timeout=5s
+                    --health-retries=3
+
+        steps:
+            -   name: Checkout code
+                uses: actions/checkout@v4
+
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: '8.4'
+                    extensions: pdo, pdo_mysql
+
+            -   name: Install Dependencies
+                run: composer install --no-progress --prefer-dist
+
+            -   name: Create Database Schema
+                env:
+                    DATABASE_URL: mysql://root:root@127.0.0.1:3306/fastreserve_test
+                run: |
+                    php bin/console doctrine:schema:create --env=test
+
+            -   name: Run  Tests
+                env:
+                    DATABASE_URL: mysql://root:root@127.0.0.1:3306/fastreserve_test
+                run: vendor/bin/phpunit
