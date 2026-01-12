@@ -4,132 +4,103 @@ declare(strict_types=1);
 
 namespace App\Inventory\Infrastructure\Controller\Admin;
 
+use App\Inventory\Application\Command\ActivateWarehouseMessage;
 use App\Inventory\Application\Command\CreateWarehouseMessage;
-use App\Inventory\Application\Dto\WarehouseInfoDto;
-use App\Inventory\Domain\Repository\WarehouseRepositoryInterface;
+use App\Inventory\Application\Command\DeactivateWarehouseMessage;
+use App\Inventory\Application\Dto\CreateWarehouseRequestDto;
+use App\Inventory\Application\Query\GetWarehouseInfoQuery;
+use App\Inventory\Application\Query\ListWarehousesQuery;
+use App\Inventory\Domain\Model\Warehouse\Location;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\Messenger\HandleTrait;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Uid\UuidV7;
 
 #[Route('/api/admin/warehouses')]
 #[IsGranted('ROLE_ADMIN')]
 class WarehouseController extends AbstractController
 {
+    use HandleTrait;
+
     public function __construct(
-        private MessageBusInterface $bus,
-        private WarehouseRepositoryInterface $warehouseRepository
+        private MessageBusInterface $messageBus,
     ) {
     }
 
     #[Route('', methods: ['POST'])]
-    public function create(Request $request): JsonResponse
-    {
-        $data = json_decode($request->getContent(), true);
-
-        $message = new CreateWarehouseMessage(
-            name: $data['name'] ?? '',
-            capacity: $data['capacity'] ?? 0,
-            address: $data['address'] ?? '',
-            city: $data['city'] ?? '',
-            postalCode: $data['postalCode'] ?? '',
-            latitude: $data['latitude'] ?? null,
-            longitude: $data['longitude'] ?? null,
-            type: $data['type'] ?? 'STANDARD'
+    public function create(
+        #[MapRequestPayload]
+        CreateWarehouseRequestDto $dto
+    ): JsonResponse {
+        $location = new Location(
+            address: $dto->address,
+            city: $dto->city,
+            postalCode: $dto->postalCode,
+            latitude: $dto->latitude,
+            longitude: $dto->longitude
         );
 
-        try {
-            $result = $this->bus->dispatch($message);
+        $message = new CreateWarehouseMessage(
+            uuid: new UuidV7(), // todo: have a second look
+            name: $dto->name,
+            capacity: $dto->capacity,
+            location: $location,
+            type: $dto->type
+        );
 
-            return new JsonResponse([
-                'message' => 'Warehouse created successfully',
-                'data' => $result,
-            ], Response::HTTP_CREATED);
-        } catch (\Exception $e) {
-            return new JsonResponse([
-                'error' => $e->getMessage(),
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        $this->messageBus->dispatch($message);
+
+        return new JsonResponse([
+            'message' => 'Warehouse creation request accepted',
+        ], Response::HTTP_ACCEPTED);
     }
 
     #[Route('/{id}', methods: ['GET'])]
     public function getInfo(string $id): JsonResponse
     {
-        $warehouse = $this->warehouseRepository->find($id);
+        try {
+            $dto = $this->handle(new GetWarehouseInfoQuery(new UuidV7($id)));
 
-        if (!$warehouse || $warehouse->id === null) {
-            return new JsonResponse(['error' => 'Warehouse not found'], Response::HTTP_NOT_FOUND);
+            return new JsonResponse($dto->toArray());
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
         }
-
-        $dto = new WarehouseInfoDto(
-            id: $warehouse->id->toRfc4122(),
-            name: $warehouse->name,
-            capacity: $warehouse->getCapacity(),
-            currentStock: 0,
-            isActive: $warehouse->isOpen(),
-            type: $warehouse->type->name,
-            address: $warehouse->getLocation()->address,
-            city: $warehouse->getLocation()->city,
-            postalCode: $warehouse->getLocation()->postalCode,
-            latitude: $warehouse->getLocation()->latitude !== null ? (float) $warehouse->getLocation()->latitude : null,
-            longitude: $warehouse->getLocation()->longitude !== null ? (float) $warehouse->getLocation()->longitude : null
-        );
-
-        return new JsonResponse($dto->toArray());
     }
 
     #[Route('', methods: ['GET'])]
     public function list(): JsonResponse
     {
-        $warehouses = $this->warehouseRepository->findAll();
+        $dto = $this->handle(new ListWarehousesQuery());
 
-        $dtos = array_map(fn ($w) => new WarehouseInfoDto(
-            id: $w->id !== null ? $w->id->toRfc4122() : '',
-            name: $w->name,
-            capacity: $w->getCapacity(),
-            currentStock: 0,
-            isActive: $w->isOpen(),
-            type: $w->type->name,
-            address: $w->getLocation()->address,
-            city: $w->getLocation()->city,
-            postalCode: $w->getLocation()->postalCode,
-            latitude: $w->getLocation()->latitude !== null ? (float) $w->getLocation()->latitude : null,
-            longitude: $w->getLocation()->longitude !== null ? (float) $w->getLocation()->longitude : null
-        ), $warehouses);
-
-        return new JsonResponse(array_map(fn ($dto) => $dto->toArray(), $dtos));
+        return new JsonResponse($dto->toArray());
     }
 
     #[Route('/{id}/activate', methods: ['PATCH'])]
     public function activate(string $id): JsonResponse
     {
-        $warehouse = $this->warehouseRepository->findWithLock($id);
+        try {
+            $this->messageBus->dispatch(new ActivateWarehouseMessage(new UuidV7($id)));
 
-        if (!$warehouse) {
-            return new JsonResponse(['error' => 'Warehouse not found'], Response::HTTP_NOT_FOUND);
+            return new JsonResponse(['message' => 'Warehouse activation request accepted'], Response::HTTP_ACCEPTED);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
         }
-
-        $warehouse->activate();
-        $this->warehouseRepository->save($warehouse);
-
-        return new JsonResponse(['message' => 'Warehouse activated']);
     }
 
     #[Route('/{id}/deactivate', methods: ['PATCH'])]
     public function deactivate(string $id): JsonResponse
     {
-        $warehouse = $this->warehouseRepository->findWithLock($id);
+        try {
+            $this->messageBus->dispatch(new DeactivateWarehouseMessage(new UuidV7($id)));
 
-        if (!$warehouse) {
-            return new JsonResponse(['error' => 'Warehouse not found'], Response::HTTP_NOT_FOUND);
+            return new JsonResponse(['message' => 'Warehouse deactivation request accepted'], Response::HTTP_ACCEPTED);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
         }
-
-        $warehouse->deactivate();
-        $this->warehouseRepository->save($warehouse);
-
-        return new JsonResponse(['message' => 'Warehouse deactivated']);
     }
 }

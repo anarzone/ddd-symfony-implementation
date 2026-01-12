@@ -10,6 +10,7 @@ use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
+use Symfony\Component\Uid\UuidV7;
 
 class ApiTokenFixtures extends Fixture implements FixtureGroupInterface, DependentFixtureInterface
 {
@@ -50,7 +51,14 @@ class ApiTokenFixtures extends Fixture implements FixtureGroupInterface, Depende
             $expiresAt = new \DateTimeImmutable($modifier);
         }
 
-        $token = new ApiToken($user, $plainToken, $description, $expiresAt);
+        $token = new ApiToken(
+            uuid: new UuidV7(),
+            user: $user,
+            token: $plainToken,
+            description: $description,
+            createdAt: new \DateTimeImmutable(),
+            expiresAt: $expiresAt
+        );
         $manager->persist($token);
     }
 

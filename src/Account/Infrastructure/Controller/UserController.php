@@ -5,19 +5,25 @@ declare(strict_types=1);
 namespace App\Account\Infrastructure\Controller;
 
 use App\Account\Application\Command\CreateUserMessage;
+use App\Account\Application\Command\UpdateUserMessage;
+use App\Account\Application\Dto\Request\CreateUserDto;
+use App\Account\Application\Dto\Request\UpdateUserDto;
 use App\Account\Application\Query\ListUsersQuery;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\Messenger\HandleTrait;
 use Symfony\Component\Messenger\MessageBusInterface;
-use Symfony\Component\Messenger\Stamp\HandledStamp;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Uid\UuidV7;
 
 #[Route('/api/users')]
 class UserController extends AbstractController
 {
+    use HandleTrait;
+
     public function __construct(
         private MessageBusInterface $bus
     ) {
@@ -25,55 +31,59 @@ class UserController extends AbstractController
 
     #[Route('', methods: ['POST'])]
     #[IsGranted('ROLE_ADMIN')]
-    public function create(Request $request): JsonResponse
+    public function create(#[MapRequestPayload] CreateUserDto $dto): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $uuid = new UuidV7();
 
-        if (!isset($data['email']) || !isset($data['password'])) {
-            return new JsonResponse([
-                'error' => 'Email and password are required',
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        $message = new CreateUserMessage(
+            uuid: $uuid,
+            email: $dto->email,
+            password: $dto->password,
+            roles: $dto->roles,
+        );
 
-        try {
-            $message = new CreateUserMessage(
-                email: $data['email'],
-                password: $data['password'],
-                roles: $data['roles'] ?? ['ROLE_USER']
-            );
+        $this->bus->dispatch($message);
 
-            $envelope = $this->bus->dispatch($message);
-            $handledStamp = $envelope->last(HandledStamp::class);
+        return new JsonResponse([
+            'message' => 'New User being created',
+            'data' => [
+                'user' => [
+                    'uuid' => $uuid,
+                ],
+            ],
+        ], Response::HTTP_ACCEPTED);
+    }
 
-            if (!$handledStamp) {
-                return new JsonResponse([
-                    'error' => 'Failed to create user',
-                ], Response::HTTP_INTERNAL_SERVER_ERROR);
-            }
+    #[Route('/{uuid}', methods: ['PUT', 'PATCH'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function update(string $uuid, #[MapRequestPayload] UpdateUserDto $dto): JsonResponse
+    {
+        $uuid = new UuidV7($uuid);
 
-            return new JsonResponse($handledStamp->getResult(), Response::HTTP_CREATED);
-        } catch (\InvalidArgumentException $e) {
-            return new JsonResponse([
-                'error' => $e->getMessage(),
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        $message = new UpdateUserMessage(
+            uuid: $uuid,
+            email: $dto->email,
+            roles: $dto->roles,
+        );
+
+        $this->bus->dispatch($message);
+
+        return new JsonResponse([
+            'message' => 'User being updated',
+            'data' => [
+                'user' => [
+                    'uuid' => $uuid,
+                ],
+            ],
+        ], Response::HTTP_ACCEPTED);
     }
 
     #[Route('', methods: ['GET'])]
     #[IsGranted('ROLE_ADMIN')]
     public function list(): JsonResponse
     {
-        $query = new ListUsersQuery();
-
-        $envelope = $this->bus->dispatch($query);
-        $handledStamp = $envelope->last(HandledStamp::class);
-
-        if (!$handledStamp) {
-            return new JsonResponse([
-                'error' => 'Failed to retrieve users',
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-
-        return new JsonResponse($handledStamp->getResult());
+        return new JsonResponse(
+            $this->handle(new ListUsersQuery())
+        );
     }
 }

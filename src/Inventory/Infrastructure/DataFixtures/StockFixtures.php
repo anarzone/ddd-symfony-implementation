@@ -10,6 +10,7 @@ use App\Inventory\Domain\Model\Warehouse\Warehouse;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
+use Symfony\Component\Uid\UuidV7;
 
 class StockFixtures extends Fixture implements DependentFixtureInterface
 {
@@ -32,11 +33,11 @@ class StockFixtures extends Fixture implements DependentFixtureInterface
 
         $skuIndex = 0;
 
-        // Create 200 stock items per warehouse (1000 total)
-        for ($warehouseNum = 1; $warehouseNum <= 5; ++$warehouseNum) {
+        // Create 250 stock items per warehouse (5000 total)
+        for ($warehouseNum = 1; $warehouseNum <= 20; ++$warehouseNum) {
             $warehouse = $this->getReference('warehouse-'.$warehouseNum, Warehouse::class);
 
-            for ($i = 0; $i < 200; ++$i) {
+            for ($i = 0; $i < 250; ++$i) {
                 $category = $categories[$skuIndex % \count($categories)];
                 $product = $products[$skuIndex % \count($products)];
                 $sequence = floor($skuIndex / \count($products)) + 1;
@@ -49,7 +50,12 @@ class StockFixtures extends Fixture implements DependentFixtureInterface
                 // Random quantity between 10 and 500
                 $quantity = rand(10, 500);
 
-                $stock = new Stock($warehouse, $sku, $quantity);
+                $stock = new Stock(
+                    uuid: new UuidV7(),
+                    sku: $sku,
+                    totalQuantity: $quantity,
+                    warehouse: $warehouse
+                );
                 $manager->persist($stock);
 
                 ++$skuIndex;

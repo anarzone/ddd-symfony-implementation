@@ -36,7 +36,7 @@ class ValidationExceptionListener
             $formattedViolations[] = [
                 'propertyPath' => $violation->getPropertyPath(),
                 'title' => $violation->getMessage(),
-                'code' => $violation->getCode()?->value ?? 'VALIDATION_ERROR',
+                'code' => $violation->getCode() ?? 'VALIDATION_ERROR',
             ];
         }
 

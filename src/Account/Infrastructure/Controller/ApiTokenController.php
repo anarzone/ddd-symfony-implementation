@@ -90,7 +90,7 @@ class ApiTokenController extends AbstractController
         }
 
         // Verify the token belongs to the current user
-        if ($token->user->getId() !== $user->getId()) {
+        if ($token->user->getUuid() !== $user->getUuid()) {
             return new JsonResponse(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
         }
 

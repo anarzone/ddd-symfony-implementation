@@ -16,6 +16,7 @@ use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Messenger\HandleTrait;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Uid\UuidV7;
 
 class ReservationController extends AbstractController
 {
@@ -37,19 +38,16 @@ class ReservationController extends AbstractController
             return new JsonResponse(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
         }
 
-        $userId = $user->getId();
+        $userId = $user->getUuid();
         if ($userId === null) {
             return new JsonResponse(['error' => 'Invalid user ID'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 
-        // Convert Uuid to UuidV7
-        $userIdV7 = new \Symfony\Component\Uid\UuidV7($userId->toRfc4122());
-
         $message = new ReserveStockMessage(
-            $dto->stockId,
-            $dto->quantity,
-            $userIdV7,
-            $dto->minutesValid
+            stockId: $dto->stockId,
+            quantity: $dto->quantity,
+            userId: $user->getUuid(),
+            minutesValid: $dto->minutesValid
         );
 
         $this->messageBus->dispatch($message);
@@ -63,10 +61,8 @@ class ReservationController extends AbstractController
     #[Route('/api/stock/{id}/level', methods: ['GET'])]
     public function getStockLevel(string $id): JsonResponse
     {
-        $uuid = new \Symfony\Component\Uid\UuidV7($id);
-
         return new JsonResponse(
-            $this->handle(new GetStockLevelQuery($uuid))->toArray()
+            $this->handle(new GetStockLevelQuery(new UuidV7($id)))->toArray()
         );
     }
 }
