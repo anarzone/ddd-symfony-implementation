@@ -19,6 +19,14 @@ return (new Config())
         'array_syntax' => ['syntax' => 'short'],
         'declare_strict_types' => true,
         'single_line_throw' => false,
+        'no_extra_blank_lines' => [
+            'tokens' => [
+                'extra',
+                'throw',
+                'use',
+                'use_trait',
+            ]
+        ],
         'yoda_style' => [
             'equal' => false,
             'identical' => false,

@@ -12,5 +12,4 @@ parameters:
 
     ignoreErrors:
         - '#Property .* is never read, only written#'
-        - '#Property .* is never assigned#'
 
