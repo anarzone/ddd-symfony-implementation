@@ -9,6 +9,7 @@ framework:
         routing:
             # Commands should be async
             'App\Inventory\Application\Command\*': async
+            'App\Account\Application\Command\*': async
             # Queries should be sync
             'App\Inventory\Application\Query\*': sync
         default_bus: command.bus
