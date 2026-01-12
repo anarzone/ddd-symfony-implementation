@@ -1,24 +1,64 @@
 # FastReserve HTTP API Tests
 
-This directory contains HTTP test files for testing the FastReserve API endpoints.
+This directory contains HTTP test files organized by domain for the FastReserve API.
 
-## Files
+## Test Files Organization
 
-### 1. `quick-test.http`
-Simplified tests for quick development and testing.
-- No authentication required (temporarily disable security in controllers)
+### 1. **auth-tokens.http** - Authentication & Token Management
+Tests for user authentication and API token operations:
+- Login with various configurations (default/custom expiry, descriptions)
+- Login validation errors (invalid credentials, missing fields)
+- API token generation and management
+- Token revocation
+- Token authentication testing
+
+**Use when:** Testing authentication flows, token generation, or token management
+
+---
+
+### 2. **user-management.http** - User CRUD Operations
+Complete user lifecycle management tests:
+- Admin login
+- Create users (standard and admin roles)
+- List and update users
+- User management validation errors
+- Complete workflow: Admin → Create User → User Login → Use API
+
+**Use when:** Testing user creation, updates, or complete user workflows
+
+---
+
+### 3. **warehouse-management.http** - Warehouse Operations
+Warehouse CRUD operations tests:
+- Create warehouses (STANDARD, COLD_STORAGE, AUTOMATED types)
+- List and get warehouse information
+- Activate/deactivate warehouses
+- Validation errors (coordinates, missing fields, invalid types)
+- Authorization checks (admin-only endpoints)
+
+**Use when:** Testing warehouse operations
+
+---
+
+### 4. **stock-reservation.http** - Stock & Inventory
+Stock reservation and inventory tests:
+- Reserve stock with various durations (1-60 minutes)
+- Stock reservation validation errors
+- Stock level queries (public endpoints)
+- Concurrent reservation tests
+- Business logic tests (insufficient stock, non-existent items)
+
+**Use when:** Testing stock reservation, inventory queries, or concurrency
+
+---
+
+### 5. **quick-test.http** - Quick Development Tests
+Simplified tests for quick development:
+- No authentication required (temporarily disable security)
 - Focuses on happy path and basic scenarios
 - Perfect for initial development and debugging
 
-### 2. `http-api.http`
-Comprehensive test suite covering:
-- All endpoints with various scenarios
-- Authentication tests
-- Validation tests
-- Error handling
-- Edge cases
-- Performance tests
-- Complete user workflows
+**Use when:** Quick testing during development (requires disabling auth)
 
 ## Prerequisites
 
@@ -47,41 +87,40 @@ php bin/console doctrine:fixtures:load
 
 ## Configuration
 
-### Update Base URL
-Edit the `@baseUrl` variable at the top of the `.http` files:
+### Environment Variables
+Edit `http-client.env.json` to configure your environment:
+```json
+{
+    "dev": {
+        "baseUrl": "https://fastreserve.test",
+        "authToken": "your-api-token-here"
+    }
+}
+```
+
+### Getting an API Token
+
+**Option 1: Use Login Endpoint**
+Run the login test in `auth-tokens.http`:
 ```http
-@baseUrl = http://localhost:8000
-```
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
 
-### For Authenticated Tests (http-api.http)
-
-#### Option 1: Temporarily Disable Security
-Comment out security checks in controllers:
-
-**ReservationController.php** (around line 28-31):
-```php
-// if (!$user) {
-//     return new JsonResponse(['error' => 'Authentication required'], Response::HTTP_UNAUTHORIZED);
-// }
+{
+    "email": "admin@fastreserve.com",
+    "password": "admin123",
+    "description": "Development token"
+}
 ```
+Copy the returned token to `http-client.env.json`
 
-**WarehouseController.php** (around line 16-17):
-```php
-// #[IsGranted('ROLE_ADMIN')]
-```
+**Option 2: Quick Testing (No Auth)**
+For quick testing, temporarily disable security in controllers:
 
-#### Option 2: Use JWT Authentication
-1. Install lexik/jwt-authentication-bundle
-2. Configure JWT keys
-3. Create a user
-4. Generate token:
-```bash
-php bin/console lexik:jwt:generate-token
-```
-5. Update `@authToken` variable:
-```http
-@authToken = Bearer YOUR_GENERATED_TOKEN_HERE
-```
+**ReservationController.php**: Comment out user check
+**WarehouseController.php**: Comment out `#[IsGranted('ROLE_ADMIN')]`
+
+*Remember to re-enable security after testing!*
 
 ## Running Tests
 

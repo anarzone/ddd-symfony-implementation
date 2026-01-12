@@ -15,6 +15,7 @@ final class WarehouseFactory extends PersistentObjectFactory
     protected function defaults(): array|callable
     {
         return [
+            'uuid' => new \Symfony\Component\Uid\UuidV7(),
             'name' => faker()->company(),
             'capacity' => faker()->numberBetween(100, 10000),
             'location' => new Location(
@@ -24,6 +25,9 @@ final class WarehouseFactory extends PersistentObjectFactory
                 faker()->optional()->latitude(),
                 faker()->optional()->longitude()
             ),
+            'isActive' => true,
+            'type' => \App\Inventory\Domain\Model\Warehouse\WarehouseTypeEnum::Standard,
+            'createdAt' => new \DateTimeImmutable(),
         ];
     }
 

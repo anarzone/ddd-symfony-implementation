@@ -12,7 +12,6 @@
 # 3. Update @baseUrl at the top if needed
 ###
 
-@baseUrl = http://localhost:8000
 @contentType = application/json
 
 ###############################################################################
@@ -35,16 +34,16 @@ Content-Type: {{contentType}}
 ###############################################################################
 
 # NOTE: Replace {{adminToken}} with the token from step 1
-@adminToken = Bearer {{adminToken}}
+@adminToken = Bearer {{authToken}}
 
 ### 2. Create New User (Standard Role)
 # @name createUserStandard
-POST {{baseUrl}}/api/users
+POST {{baseUrl}}/api/users?XDEBUG_SESSION=1
 Content-Type: {{contentType}}
 Authorization: {{adminToken}}
 
 {
-    "email": "warehouse.manager@fastreserve.com",
+    "email": "warehouse.manager2@fastreserve.com",
     "password": "manager123",
     "roles": ["ROLE_USER"]
 }
@@ -107,6 +106,93 @@ Authorization: {{adminToken}}
 {
     "email": "admin@fastreserve.com",
     "password": "test123"
+}
+
+###############################################################################
+# STEP 2B: USER UPDATE (Admin Only)
+###############################################################################
+
+# NOTE: Get user UUID from list users response (test #5)
+@userUuid = 019b9e45-cf63-7a97-8fb4-dd6f79030587
+
+### 9. Update User Email
+# @name updateUserEmail
+PUT {{baseUrl}}/api/users/{{userUuid}}
+Content-Type: {{contentType}}
+Authorization: {{adminToken}}
+
+{
+    "email": "updated.email@fastreserve.com"
+}
+
+### 10. Update User Roles
+# @name updateUserRoles
+PATCH {{baseUrl}}/api/users/{{userUuid}}
+Content-Type: {{contentType}}
+Authorization: {{adminToken}}
+
+{
+    "roles": ["ROLE_ADMIN"]
+}
+
+### 11. Update Both Email and Roles
+# @name updateUserEmailAndRoles
+PUT {{baseUrl}}/api/users/{{userUuid}}
+Content-Type: {{contentType}}
+Authorization: {{adminToken}}
+
+{
+    "email": "promoted.manager@fastreserve.com",
+    "roles": ["ROLE_ADMIN"]
+}
+
+### 12. Update User - Validation Error (Invalid Email)
+# @name updateUserInvalidEmail
+PATCH {{baseUrl}}/api/users/{{userUuid}}
+Content-Type: {{contentType}}
+Authorization: {{adminToken}}
+
+{
+    "email": "not-an-email"
+}
+
+### 13. Update User - Keep Existing Email (Same Email)
+# @name updateUserSameEmail
+PATCH {{baseUrl}}/api/users/{{userUuid}}
+Content-Type: {{contentType}}
+Authorization: {{adminToken}}
+
+{
+    "email": "updated.email@fastreserve.com"
+}
+
+### 14. Update User - Empty Request (No Changes)
+# @name updateUserNoChanges
+PATCH {{baseUrl}}/api/users/{{userUuid}}
+Content-Type: {{contentType}}
+Authorization: {{adminToken}}
+
+{
+}
+
+### 15. Update Non-existent User
+# @name updateUserNonExistent
+PUT {{baseUrl}}/api/users/0193c734-ffff-7000-8000-ffffffffffff
+Content-Type: {{contentType}}
+Authorization: {{adminToken}}
+
+{
+    "email": "should.fail@fastreserve.com"
+}
+
+### 16. Update User - Unauthorized (Regular User)
+# @name updateUserUnauthorized
+PATCH {{baseUrl}}/api/users/{{userUuid}}
+Content-Type: {{contentType}}
+Authorization: {{userToken}}
+
+{
+    "roles": ["ROLE_ADMIN"]
 }
 
 ###############################################################################

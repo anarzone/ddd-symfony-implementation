@@ -38,7 +38,7 @@ class StockRepositoryTest extends WebTestCase
 
         // When: fetching stock with lock
         $this->em->wrapInTransaction(function () use ($stock, &$foundStock) {
-            $foundStock = $this->stockRepository->findWithLock($stock->id);
+            $foundStock = $this->stockRepository->findWithLock($stock->uuid);
         });
 
         // Then: stock is returned with correct available quantity
@@ -121,7 +121,7 @@ class StockRepositoryTest extends WebTestCase
 
         // When: retrieving stock from database
         $this->em->wrapInTransaction(function () use ($stockProxy, &$foundStock) {
-            $foundStock = $this->stockRepository->findWithLock($stockProxy->id);
+            $foundStock = $this->stockRepository->findWithLock($stockProxy->uuid);
         });
 
         // Then: stock is persisted correctly
@@ -135,7 +135,7 @@ class StockRepositoryTest extends WebTestCase
         $stockProxy = StockFactory::createOne(['totalQuantity' => 50]);
 
         $this->em->wrapInTransaction(function () use ($stockProxy, &$stock) {
-            $stock = $this->stockRepository->findWithLock($stockProxy->id);
+            $stock = $this->stockRepository->findWithLock($stockProxy->uuid);
 
             // When: updating and saving stock
             $stock->adjustQuantity(75);
@@ -144,7 +144,7 @@ class StockRepositoryTest extends WebTestCase
 
         // Then: changes are persisted
         $this->em->wrapInTransaction(function () use ($stockProxy, &$updatedStock) {
-            $updatedStock = $this->stockRepository->findWithLock($stockProxy->id);
+            $updatedStock = $this->stockRepository->findWithLock($stockProxy->uuid);
         });
 
         $this->assertEquals(75, $updatedStock->totalQuantity);

@@ -15,12 +15,14 @@ final class StockFactory extends PersistentObjectFactory
     protected function defaults(): array|callable
     {
         return [
+            'uuid' => new \Symfony\Component\Uid\UuidV7(),
             'warehouse' => WarehouseFactory::new(),
             'sku' => new SKU(
                 faker()->lexify('???-').faker()->numerify('####'),
                 faker()->words(3, true)
             ),
-            'totalQuantity' => faker()->numberBetween(10, 1000),
+//            'totalQuantity' => faker()->numberBetween(10, 1000),
+            'createdAt' => new \DateTimeImmutable(),
         ];
     }
 
