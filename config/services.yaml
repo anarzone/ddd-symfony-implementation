@@ -35,3 +35,22 @@ services:
 
     App\Account\Domain\Repository\ApiTokenRepositoryInterface:
         '@App\Account\Infrastructure\Persistence\Doctrine\ApiTokenRepository'
+
+    # Cache Decorators
+    App\Inventory\Infrastructure\Persistence\Doctrine\Cache\CachedStockRepository:
+        decorates: 'App\Inventory\Infrastructure\Persistence\Doctrine\StockRepository'
+        arguments:
+            $decoratedRepository: '@.inner'
+            $cache: '@cache.pool.short_lived'
+
+    App\Inventory\Infrastructure\Persistence\Doctrine\Cache\CachedWarehouseRepository:
+        decorates: 'App\Inventory\Infrastructure\Persistence\Doctrine\WarehouseRepository'
+        arguments:
+            $decoratedRepository: '@.inner'
+            $cache: '@cache.pool.long_lived'
+
+    App\Account\Infrastructure\Persistence\Doctrine\Cache\CachedUserRepository:
+        decorates: 'App\Account\Infrastructure\Persistence\Doctrine\UserRepository'
+        arguments:
+            $decoratedRepository: '@.inner'
+            $cache: '@cache.pool.short_lived'
