@@ -1,0 +1,296 @@
+###
+# Stock Reservation & Management HTTP Tests
+#
+# This file tests stock reservation, stock level queries, and inventory management
+#
+# Prerequisites:
+# 1. Run: php bin/console doctrine:fixtures:load
+# 2. Start Symfony server: php bin/console server:run
+# 3. Ensure you have valid auth token in http-client.env.json
+###
+
+@contentType = application/json
+
+###############################################################################
+# STOCK RESERVATION (User Endpoints - Requires Authentication)
+###############################################################################
+
+### 1. Reserve Stock - Success (Default 15 minutes)
+# @name reserveStockDefault
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+    "stockId": "019b708d-75b2-73ed-b31a-8613284480be",
+    "quantity": 10,
+    "minutesValid": 15
+}
+
+### 2. Reserve Stock - Custom Duration (30 minutes)
+# @name reserveStockExtended
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+    "stockId": "019b708d-75b2-73ed-b31a-8613284480be",
+    "quantity": 25,
+    "minutesValid": 30
+}
+
+### 3. Reserve Stock - Maximum Duration (60 minutes)
+# @name reserveStockMaxDuration
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+    "stockId": "019b708d-75b2-73ed-b31a-8613284480be",
+    "quantity": 15,
+    "minutesValid": 60
+}
+
+### 4. Reserve Stock - Minimum Duration (1 minute)
+# @name reserveStockMinDuration
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+    "stockId": "019b708d-75b2-73ed-b31a-8613284480be",
+    "quantity": 5,
+    "minutesValid": 1
+}
+
+###############################################################################
+# VALIDATION ERROR CASES
+###############################################################################
+
+### 5. Reserve Stock - Zero Quantity (Validation Error)
+# @name reserveStockZeroQuantity
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+    "stockId": "019b708d-75b2-73ed-b31a-8613284480be",
+    "quantity": 0,
+    "minutesValid": 15
+}
+
+### 6. Reserve Stock - Negative Quantity (Validation Error)
+# @name reserveStockNegativeQuantity
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+    "stockId": "019b708d-75b2-73ed-b31a-8613284480be",
+    "quantity": -5,
+    "minutesValid": 15
+}
+
+### 7. Reserve Stock - Duration Too Short (Validation Error)
+# @name reserveStockDurationTooShort
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+    "stockId": "019b708d-75b2-73ed-b31a-8613284480be",
+    "quantity": 10,
+    "minutesValid": 0
+}
+
+### 8. Reserve Stock - Duration Too Long (Validation Error)
+# @name reserveStockDurationTooLong
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+    "stockId": "019b708d-75b2-73ed-b31a-8613284480be",
+    "quantity": 10,
+    "minutesValid": 120
+}
+
+###############################################################################
+# AUTHENTICATION TESTS
+###############################################################################
+
+### 9. Reserve Stock - Unauthorized (No Token)
+# @name reserveStockUnauthorized
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+
+{
+    "stockId": "019b708d-75b2-73ed-b31a-8613284480be",
+    "quantity": 10,
+    "minutesValid": 15
+}
+
+### 10. Reserve Stock - Invalid Token
+# @name reserveStockInvalidToken
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer invalid_token_abc123
+
+{
+    "stockId": "019b708d-75b2-73ed-b31a-8613284480be",
+    "quantity": 10,
+    "minutesValid": 15
+}
+
+###############################################################################
+# STOCK QUERIES (Public Endpoints - No Authentication Required)
+###############################################################################
+
+### 11. Get Stock Level - Success
+# @name getStockLevel
+@stockId = 019b708d-75b2-73ed-b31a-8613284480be
+GET {{baseUrl}}/api/stock/{{stockId}}/level
+
+### 12. Get Stock Level - Not Found
+# @name getStockLevelNotFound
+GET {{baseUrl}}/api/stock/0193c734-ffff-7000-8000-ffffffffffff/level
+
+### 13. Get Stock Level - Invalid UUID Format
+# @name getStockLevelInvalidUuid
+GET {{baseUrl}}/api/stock/not-a-valid-uuid/level
+
+###############################################################################
+# BUSINESS LOGIC TESTS
+###############################################################################
+
+### 14. Reserve Stock - Insufficient Stock
+# @name reserveStockInsufficientStock
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+    "stockId": "019b708d-75b2-73ed-b31a-8613284480be",
+    "quantity": 999999,
+    "minutesValid": 15
+}
+
+### 15. Reserve Stock - Non-Existent Stock Item
+# @name reserveStockNotFound
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+    "stockId": "0193c734-ffff-7000-8000-ffffffffffff",
+    "quantity": 10,
+    "minutesValid": 15
+}
+
+###############################################################################
+# CONCURRENCY TESTS (Multiple Simultaneous Reservations)
+###############################################################################
+
+### 16. Concurrent Reservation 1
+# @name concurrentReservation1
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+    "stockId": "019b708d-75b2-73ed-b31a-8613284480be",
+    "quantity": 5,
+    "minutesValid": 15
+}
+
+### 17. Concurrent Reservation 2
+# @name concurrentReservation2
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+    "stockId": "019b708d-75b2-73ed-b31a-8613284480be",
+    "quantity": 8,
+    "minutesValid": 15
+}
+
+### 18. Concurrent Reservation 3
+# @name concurrentReservation3
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+    "stockId": "019b708d-75b2-73ed-b31a-8613284480be",
+    "quantity": 12,
+    "minutesValid": 15
+}
+
+### 19. Check Stock After Concurrent Reservations
+# @name checkStockAfterReservations
+GET {{baseUrl}}/api/stock/019b708d-75b2-73ed-b31a-8613284480be/level
+
+###############################################################################
+# PERFORMANCE TESTS
+###############################################################################
+
+### 20. Get Stock Level - Performance Check
+# @name performanceGetStockLevel
+GET {{baseUrl}}/api/stock/019b708d-75b2-73ed-b31a-8613284480be/level
+
+### 21. Reserve Stock - Performance Check
+# @name performanceReserveStock
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+    "stockId": "019b708d-75b2-73ed-b31a-8613284480be",
+    "quantity": 10,
+    "minutesValid": 15
+}
+
+###############################################################################
+# WORKFLOW TESTS - Complete User Journey
+###############################################################################
+
+### Workflow Step 1: Check Initial Stock Level
+GET {{baseUrl}}/api/stock/019b708d-75b2-73ed-b31a-8613284480be/level
+
+###
+
+### Workflow Step 2: Make a Reservation
+POST {{baseUrl}}/api/reserve
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+    "stockId": "019b708d-75b2-73ed-b31a-8613284480be",
+    "quantity": 50,
+    "minutesValid": 20
+}
+
+###
+
+### Workflow Step 3: Check Stock Level After Reservation
+GET {{baseUrl}}/api/stock/019b708d-75b2-73ed-b31a-8613284480be/level
+
+###
+
+###############################################################################
+# NOTES
+###############################################################################
+#
+# RUNNING THESE TESTS:
+# 1. Ensure Symfony server is running: php bin/console server:run
+# 2. Make sure fixtures are loaded: php bin/console doctrine:fixtures:load
+# 3. Update {{authToken}} in http-client.env.json with a valid token
+# 4. Update {{stockId}} variables with actual stock UUIDs from your database
+#
+# TO GET A VALID TOKEN:
+# Use tests/http/auth-tokens.http or tests/http/user-management.http to login
+#
+# STOCK UUID FORMAT:
+# The system uses UUID v7 format. Check your database for valid stock IDs.
+###############################################################################
