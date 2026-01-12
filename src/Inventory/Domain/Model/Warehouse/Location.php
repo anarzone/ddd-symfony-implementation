@@ -47,4 +47,9 @@ readonly class Location
     {
         return $this->latitude !== null && $this->longitude !== null;
     }
+
+    public function toString(): string
+    {
+        return "$this->city, $this->address";
+    }
 }

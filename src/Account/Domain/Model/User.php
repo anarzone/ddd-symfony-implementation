@@ -10,29 +10,15 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
-use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Uid\UuidV7;
 
 #[ORM\Entity]
 #[ORM\Index(name: 'idx_user_email', columns: ['email'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
-    #[ORM\Id]
-    #[ORM\Column(type: UuidType::NAME, unique: true)]
-    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
-    #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    private ?Uuid $id = null;
-
-    #[ORM\Column(type: Types::STRING, length: 180, unique: true)]
-    private string $email;
-
-    #[ORM\Column(type: Types::JSON)]
-    private array $roles;
-
-    #[ORM\Column(type: Types::STRING)]
-    public string $password;
-
     /** @var Collection<int, ApiToken> */
     #[ORM\OneToMany(targetEntity: ApiToken::class, mappedBy: 'user', cascade: ['persist', 'remove'])]
     private Collection $apiTokens;
@@ -42,16 +28,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private Collection $reservations;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    private \DateTimeImmutable $createdAt;
+    public \DateTimeImmutable $createdAt;
 
-    public function __construct(string $email, string $password, array $roles = ['ROLE_USER'])
-    {
-        $this->email = $email;
-        $this->hashPassword($password);
-        $this->roles = $roles;
+    public function __construct(
+        #[ORM\Id]
+        #[ORM\Column(type: UuidType::NAME, unique: true)]
+        public ?UuidV7 $uuid,
+        #[ORM\Column(type: Types::STRING, length: 180)]
+        public string $email,
+        #[ORM\Column(type: Types::STRING)]
+        public string $password,
+        UserPasswordHasherInterface $passwordHasher,
+        #[ORM\Column(type: Types::JSON)]
+        public array $roles,
+    ) {
         $this->reservations = new ArrayCollection();
         $this->apiTokens = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
+
+        $this->password = $passwordHasher->hashPassword($this, $password);
     }
 
     public function promoteToAdmin(): void
@@ -61,14 +56,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
     }
 
-    public function getId(): ?Uuid
+    public function getUuid(): ?UuidV7
     {
-        return $this->id;
+        return $this->uuid;
     }
 
     public function getEmail(): string
     {
         return $this->email;
+    }
+
+    public function changeEmail(string $email): void
+    {
+        $this->email = $email;
     }
 
     public function getCreatedAt(): \DateTimeImmutable
@@ -82,13 +82,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $roles[] = 'ROLE_USER';
 
         return array_unique($roles);
-    }
-
-    public function hashPassword(string $password): static
-    {
-        $this->password = hash('sha256', $password);
-
-        return $this;
     }
 
     public function getPassword(): string

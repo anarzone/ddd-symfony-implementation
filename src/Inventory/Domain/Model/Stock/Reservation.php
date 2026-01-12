@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Inventory\Domain\Model\Stock;
 
 use App\Account\Domain\Model\User;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
@@ -14,52 +15,48 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Index(name: 'idx_reservation_expiry', columns: ['expires_at'])]
 class Reservation
 {
-    #[ORM\Id]
-    #[ORM\Column(type: UuidType::NAME, unique: true)]
-    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
-    #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    public ?Uuid $id = null;
-
-    // Link to the Aggregate Root (Stock)
-    #[ORM\ManyToOne(targetEntity: Stock::class, inversedBy: 'reservations')]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    private Stock $stock {
-        get => $this->stock;
-    }
-
-    #[ORM\Column]
-    public int $quantity {
-        get => $this->quantity;
-    }
-
-    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'reservations')]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    public User $user {
-        get => $this->user;
-    }
-
-    #[ORM\Column(length: 255, nullable: true)]
-    public ?string $orderReference = null; // Link to an Order ID once payment starts
-
-    #[ORM\Column]
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
     #[ORM\Column]
     public \DateTimeImmutable $expiresAt;
 
-    #[ORM\Column(length: 20)]
-    private string $status { // ACTIVE, CONVERTED_TO_SALE, EXPIRED, CANCELLED
-        get => $this->status;
-    }
-
-    public function __construct(Stock $stock, int $quantity, User $user, int $minutesValid = 15)
-    {
-        $this->stock = $stock;
-        $this->quantity = $quantity;
-        $this->user = $user;
-        $this->status = 'ACTIVE';
+    public function __construct(
+        #[ORM\Id]
+        #[ORM\Column(type: UuidType::NAME, unique: true)]
+        public ?Uuid $uuid,
+        #[ORM\ManyToOne(targetEntity: Stock::class, inversedBy: 'reservations')]
+        #[ORM\JoinColumn(referencedColumnName: 'uuid', nullable: false, onDelete: 'CASCADE')]
+        public Stock $stock,
+        #[ORM\Column]
+        public int $quantity,
+        #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'reservations')]
+        #[ORM\JoinColumn(referencedColumnName: 'uuid', nullable: false, onDelete: 'CASCADE')]
+        public User $user,
+        #[ORM\Column(length: 255, nullable: true)]
+        public ?string $orderReference = null,
+        #[ORM\Column(length: 20)]
+        private ?string $status = 'ACTIVE',
+        int $minutesValid = 15
+    ) {
         $this->createdAt = new \DateTimeImmutable();
         $this->expiresAt = $this->createdAt->modify("+$minutesValid minutes");
+    }
+
+    public static function createWithCustomExpiry(
+        Uuid $uuid,
+        Stock $stock,
+        int $quantity,
+        User $user,
+    ): self {
+        return new self(
+            uuid: $uuid,
+            stock: $stock,
+            quantity: $quantity,
+            user: $user,
+            orderReference: null,
+            minutesValid: 0
+        );
     }
 
     public function isExpired(): bool
@@ -77,7 +74,7 @@ class Reservation
         return $this->status === 'ACTIVE' && !$this->isExpired();
     }
 
-    public function convertToSale(string $orderReference)
+    public function convertToSale(string $orderReference): void
     {
         if ($this->isExpired()) {
             throw new \DomainException('Cannot convert expired reservation to sale');

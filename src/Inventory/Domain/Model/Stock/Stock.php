@@ -14,51 +14,32 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Uid\UuidV7;
 
 #[ORM\Entity(repositoryClass: StockRepository::class)]
 #[ORM\Table(name: 'inventory_stocks')]
 #[ORM\Index(name: 'idx_stock_sku', columns: ['sku_code'])]
 class Stock
 {
-    #[ORM\Id]
-    #[ORM\Column(type: UuidType::NAME, unique: true)]
-    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
-    #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    public ?Uuid $id = null;
-
-    #[ORM\Embedded(class: SKU::class)]
-    public SKU $sku;
-
-    #[ORM\Column(type: Types::INTEGER)]
-    public int $totalQuantity {
-        get => $this->totalQuantity;
-
-        set(int $quantity) {
-            if ($quantity < 0) {
-                throw new \InvalidArgumentException('Total quantity cannot be negative');
-            }
-            $this->totalQuantity = $quantity;
-        }
-    }
-
-    #[ORM\ManyToOne(targetEntity: Warehouse::class, inversedBy: 'stocks')]
-    #[ORM\JoinColumn(nullable: false)]
-    public Warehouse $warehouse {
-        get => $this->warehouse;
-    }
-
     /** @var Collection<int, Reservation> */
     #[ORM\OneToMany(targetEntity: Reservation::class, mappedBy: 'stock', cascade: ['persist', 'remove'])]
-    public Collection $reservations;
+    private Collection $reservations;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     public \DateTimeImmutable $createdAt;
 
-    public function __construct(Warehouse $warehouse, SKU $sku, int $totalQuantity)
-    {
-        $this->warehouse = $warehouse;
-        $this->sku = $sku;
-        $this->totalQuantity = $totalQuantity;
+    public function __construct(
+        #[ORM\Id]
+        #[ORM\Column(type: UuidType::NAME, unique: true)]
+        public ?Uuid $uuid,
+        #[ORM\Embedded(class: SKU::class)]
+        public SKU $sku,
+        #[ORM\Column(type: Types::INTEGER)]
+        public int $totalQuantity,
+        #[ORM\ManyToOne(targetEntity: Warehouse::class, inversedBy: 'stocks')]
+        #[ORM\JoinColumn(referencedColumnName: 'uuid', nullable: false)]
+        public Warehouse $warehouse,
+    ) {
         $this->reservations = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
     }
@@ -96,7 +77,13 @@ class Stock
             );
         }
 
-        $reservation = new Reservation($this, $quantity, $user, $minutesValid);
+        $reservation = new Reservation(
+            uuid: new UuidV7(),
+            stock: $this,
+            quantity: $quantity,
+            user: $user,
+            minutesValid: $minutesValid
+        );
         $this->reservations->add($reservation);
 
         return $reservation;
