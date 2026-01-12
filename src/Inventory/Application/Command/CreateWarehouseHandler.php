@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Inventory\Application\Command;
 
-use App\Inventory\Domain\Model\Warehouse\Location;
 use App\Inventory\Domain\Model\Warehouse\Warehouse;
 use App\Inventory\Domain\Repository\WarehouseRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -19,18 +18,12 @@ readonly class CreateWarehouseHandler
 
     public function __invoke(CreateWarehouseMessage $message): array
     {
-        $location = new Location(
-            address: $message->address,
-            city: $message->city,
-            postalCode: $message->postalCode,
-            latitude: $message->latitude !== null ? $message->latitude : null,
-            longitude: $message->longitude !== null ? $message->longitude : null
-        );
-
         $warehouse = new Warehouse(
+            uuid: $message->uuid,
             name: $message->name,
             capacity: $message->capacity,
-            location: $location
+            location: $message->location,
+            type: $message->type,
         );
 
         // Set type using domain method
@@ -39,7 +32,7 @@ readonly class CreateWarehouseHandler
         $this->warehouseRepository->save($warehouse);
 
         return [
-            'warehouseId' => $warehouse->id,
+            'warehouseId' => $warehouse->uuid,
             'name' => $warehouse->name,
         ];
     }

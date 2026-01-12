@@ -25,14 +25,14 @@ readonly class GetStockLevelQueryHandler
         }
 
         return new StockLevelDto(
-            stockId: $stock->id !== null ? $stock->id->toRfc4122() : '',
+            stockId: $stock->uuid !== null ? $stock->uuid->toRfc4122() : '',
             skuCode: $stock->sku->code,
             skuName: $stock->sku->name,
             totalQuantity: $stock->totalQuantity,
             availableQuantity: $stock->getAvailableQuantity(),
             reservedQuantity: $stock->getReservedQuantity(),
             warehouseName: $stock->warehouse->name,
-            location: $stock->warehouse->getLocation()->city.', '.$stock->warehouse->getLocation()->address
+            location: $stock->warehouse->location->toString(),
         );
     }
 }

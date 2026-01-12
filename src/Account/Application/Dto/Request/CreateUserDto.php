@@ -2,15 +2,20 @@
 
 declare(strict_types=1);
 
-namespace App\Account\Application\Dto;
+namespace App\Account\Application\Dto\Request;
+
+use Symfony\Component\Validator\Constraints as Assert;
 
 readonly class CreateUserDto
 {
     public function __construct(
-        public string $id,
+        #[Assert\Email]
+        #[Assert\NotBlank]
         public string $email,
-        public array $roles,
-        public string $createdAt
+        #[Assert\NotBlank]
+        #[Assert\Length(min: 8)]
+        public string $password,
+        public array $roles = ['ROLE_USER'],
     ) {
     }
 }
